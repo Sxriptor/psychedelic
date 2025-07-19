@@ -49,17 +49,6 @@ A comprehensive collection of interactive computer-generated visuals, AI-powered
 - Advanced AI conversation capabilities
 - Enhanced user interface for AI interactions
 
-### 🎮 Gaming & Interactive
-
-#### **CS2 Integration System** (`cs2_integration.js`, `csgo420.js`)
-- **Counter-Strike 2 offline testing system**
-- Browser-based cheat detection and analysis tools
-- QA testing framework for game mechanics
-- Performance monitoring and optimization tools
-
-#### **Setup CS2 Cheats** (`setup_cs2_cheats.html`)
-- Interactive setup interface for CS2 testing tools
-- Configuration management and validation
 
 ### 🧮 Mathematical & Creative
 
@@ -128,7 +117,6 @@ A comprehensive collection of interactive computer-generated visuals, AI-powered
 1. **Open any HTML file** in your browser to experience the visuals
 2. **For audio-reactive experiences**: Allow microphone access when prompted
 3. **For AI integrations**: Configure API keys in the respective files
-4. **For CS2 features**: Follow the setup instructions in `setup_cs2_cheats.html`
 
 ## 🎨 Visual Features
 
@@ -159,12 +147,6 @@ A comprehensive collection of interactive computer-generated visuals, AI-powered
 - **Customizable parameters** for different AI behaviors
 - **Response visualization** and formatting
 
-## 🎮 Gaming Integration
-
-### CS2 Testing Framework
-- **Offline bot testing** capabilities
-- **Performance monitoring** and optimization tools
-- **Browser-based cheat detection** system
 
 ### Quality Assurance Tools
 - **Automated testing** frameworks
@@ -209,10 +191,6 @@ shroomshitting/
 │   ├── openai.html              # OpenAI integration
 │   ├── grok3.html               # Grok AI experience
 │   └── grok3ad.html             # Enhanced Grok interface
-├── 🎮 Gaming & Testing
-│   ├── cs2_integration.js       # CS2 integration system
-│   ├── csgo420.js               # CS2 testing framework
-│   └── setup_cs2_cheats.html    # Setup interface
 ├── 🧮 Creative Tools
 │   ├── math.html                # Mathematical visualizer
 │   ├── ascii.html               # ASCII art generator
@@ -312,3 +290,4 @@ Experience the visuals live:
 ---
 
 **🎨 Explore the intersection of technology, art, and consciousness through these computer-generated visual experiences!**
+git
