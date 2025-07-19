@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crazy Animated ASCII Visuals</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ascii-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #00FF00;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 20px;
+            line-height: 18px;
+            white-space: pre;
+            animation: move-ascii 1s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes move-ascii {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-50%, -50%); }
+        }
+
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: -1;
+        }
+
+        /* Add extra layers for crazy animation */
+        .ascii-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #FF00FF;
+            font-size: 20px;
+            line-height: 18px;
+            white-space: pre;
+            animation: layer-move 2s linear infinite alternate;
+        }
+
+        @keyframes layer-move {
+            0% { opacity: 0; transform: scale(1.5) rotate(0deg); }
+            100% { opacity: 1; transform: scale(1) rotate(720deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="background"></div>
+    <div id="ascii-container" class="ascii-container"></div>
+
+    <script>
+        const asciiSymbols = [
+            "@", "#", "%", "&", "!", "*", ".", "O", "8", "(", ")", "=", "+", "-", "x", "/"
+        ];
+        
+        let container = document.getElementById("ascii-container");
+
+        const numColumns = Math.floor(window.innerWidth / 20); // Adjusted for scaling
+        const numRows = Math.floor(window.innerHeight / 20);  // Adjusted for scaling
+
+        function generateAsciiArt() {
+            let art = '';
+            for (let i = 0; i < numRows; i++) {
+                let row = '';
+                for (let j = 0; j < numColumns; j++) {
+                    row += asciiSymbols[Math.floor(Math.random() * asciiSymbols.length)];
+                }
+                art += row + '\n';
+            }
+            return art;
+        }
+
+        function animateAscii() {
+            const asciiArt = generateAsciiArt();
+            container.textContent = asciiArt;
+
+            // Create multiple layers for additional effects
+            const layer = document.createElement("div");
+            layer.className = "ascii-layer";
+            layer.textContent = generateAsciiArt();
+            document.body.appendChild(layer);
+
+            // Remove layer after animation
+            setTimeout(() => {
+                layer.remove();
+            }, 2000); // Matches the animation time
+        }
+
+        // Start animation every 200ms
+        setInterval(animateAscii, 200);
+
+        // Initial call to kick off animation
+        animateAscii();
+    </script>
+
+</body>
+</html>

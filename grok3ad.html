@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Psychedelic Simulation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+    canvas {
+      display: block;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 10;
+      max-width: 300px;
+    }
+    #controls div {
+      margin-bottom: 12px;
+    }
+    #controls label {
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    #controls select, #controls button {
+      padding: 6px 12px;
+      margin-right: 8px;
+      background: #222;
+      color: white;
+      border: 1px solid #666;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #controls select:hover, #controls button:hover {
+      background: #444;
+    }
+    #controls input[type="range"] {
+      width: 180px;
+      vertical-align: middle;
+    }
+    #controls span {
+      font-size: 12px;
+      color: #ccc;
+    }
+    #warning {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 0, 0, 0.6);
+      padding: 12px;
+      border-radius: 5px;
+      font-size: 13px;
+      max-width: 220px;
+    }
+    #grounding {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background: #00ff00;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 10;
+    }
+    #promptInput {
+      width: 200px;
+      padding: 5px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+<div id="warning">
+  Warning: This simulation mimics altered consciousness and may trigger discomfort. Use the Ground button to stabilize.
+</div>
+<button id="grounding" onclick="groundSimulation()">Ground Now</button>
+<div id="controls">
+  <div>
+    <label>Substance:</label>
+    <select id="substanceSelect">
+      <option value="lsd">LSD</option>
+      <option value="psilocybin">Psilocybin</option>
+      <option value="dmt">DMT</option>
+      <option value="ketamine">Ketamine</option>
+    </select>
+  </div>
+  <div>
+    <label>Environment:</label>
+    <select id="environmentSelect">
+      <option value="jungle">Jungle Temple</option>
+      <option value="cosmic">Cosmic Void</option>
+      <option value="alien">Alien Geometry</option>
+      <option value="rebirth">Rebirth Tunnel</option>
+    </select>
+  </div>
+  <div>
+    <label>Phase:</label>
+    <select id="phaseSelect">
+      <option value="onset">Onset</option>
+      <option value="peak">Peak</option>
+      <option value="collapse">Fractal Collapse</option>
+      <option value="dissolution">Ego Dissolution</option>
+    </select>
+  </div>
+  <div>
+    <label>Intensity: <span id="intensityValue">0.5</span></label>
+    <input type="range" id="intensitySlider" min="0.1" max="1.0" step="0.01" value="0.5">
+  </div>
+  <div>
+    <label>Euphoria: <span id="euphoriaValue">0.5</span></label>
+    <input type="range" id="euphoriaSlider" min="0.0" max="1.0" step="0.01" value="0.5">
+  </div>
+  <div>
+    <label>Paranoia: <span id="paranoiaValue">0.0</span></label>
+    <input type="range" id="paranoiaSlider" min="0.0" max="0.5" step="0.01" value="0.0">
+  </div>
+  <div>
+    <label>Audio Reactivity: <span id="audioValue">0.5</span></label>
+    <input type="range" id="audioSlider" min="0.0" max="1.0" step="0.01" value="0.5">
+  </div>
+  <div>
+    <label>Distortion: <span id="distortionValue">0.3</span></label>
+    <input type="range" id="distortionSlider" min="0.0" max="1.0" step="0.01" value="0.3">
+  </div>
+  <div>
+    <label>Zoom: <span id="zoomValue">1.0</span></label>
+    <input type="range" id="zoomSlider" min="0.5" max="3.0" step="0.1" value="1.0">
+  </div>
+  <div>
+    <label>Prompt:</label>
+    <input type="text" id="promptInput" placeholder="Describe what you see...">
+    <button onclick="applyPrompt()">Apply</button>
+  </div>
+  <div>
+    <button onclick="toggleAudio()">Toggle Audio</button>
+    <button onclick="randomizeSettings()">Randomize</button>
+    <button onclick="resetSettings()">Reset</button>
+  </div>
+</div>
+
+<script>
+// Configuration
+let config = {
+  substance: 'lsd',
+  environment: 'jungle',
+  phase: 'onset',
+  intensity: 0.5,
+  euphoria: 0.5,
+  paranoia: 0.0,
+  audioReactivity: 0.5,
+  distortion: 0.3,
+  zoom: 1.0,
+  audioOn: false,
+  grounded: false,
+  promptInfluence: 0.0
+};
+
+// Three.js Setup
+let scene, camera, renderer, mesh, overlayMesh;
+let time = 0;
+let audioAnalyser, synth;
+let mouse = { x: 0, y: 0 };
+
+// Audio Setup with Tone.js
+let synthOptions = {
+  lsd: { frequency: 110, type: 'sine', binaural: true, detune: 5 },
+  psilocybin: { frequency: 220, type: 'triangle', binaural: true, detune: 3 },
+  dmt: { frequency: 440, type: 'sawtooth', binaural: false, detune: 10 },
+  ketamine: { frequency: 80, type: 'square', binaural: true, detune: 2 }
+};
+
+function initAudio() {
+  if (config.audioOn) return;
+  synth = new Tone.Synth({
+    oscillator: { type: synthOptions[config.substance].type },
+    envelope: { attack: 0.2, decay: 0.3, sustain: 0.6, release: 1.5 }
+  });
+  const panner = new Tone.Panner3D({
+    panningModel: 'HRTF',
+    distanceModel: 'inverse',
+    refDistance: 1,
+    maxDistance: 100
+  }).toDestination();
+  synth.connect(panner);
+  audioAnalyser = new Tone.Analyser('fft', 1024);
+  synth.connect(audioAnalyser);
+  synth.triggerAttack(synthOptions[config.substance].frequency);
+  config.audioOn = true;
+}
+
+function toggleAudio() {
+  if (config.audioOn) {
+    synth.triggerRelease();
+    config.audioOn = false;
+  } else {
+    initAudio();
+  }
+}
+
+// Shaders
+const vertexShader = `
+  varying vec2 vUv;
+  uniform float time;
+  uniform float distortion;
+  uniform vec2 mouse;
+  void main() {
+    vUv = uv;
+    vec3 pos = position;
+    float dist = length(uv - mouse);
+    pos.xy += sin(pos.xy * 5.0 + time) * distortion * 0.1 * exp(-dist * 5.0);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  uniform float time;
+  uniform float intensity;
+  uniform float euphoria;
+  uniform float paranoia;
+  uniform float audioReactivity;
+  uniform float zoom;
+  uniform float promptInfluence;
+  uniform vec3 colorBase;
+  uniform vec3 colorAccent;
+  uniform vec2 mouse;
+  uniform sampler2D noiseTex;
+  varying vec2 vUv;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    for (int i = 0; i < 8; ++i) {
+      v += a * noise(p);
+      p = p * 2.0 + shift;
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  float mandelbrot(vec2 c) {
+    vec2 z = vec2(0.0);
+    float n = 0.0;
+    for (int i = 0; i < 100; ++i) {
+      float x = (z.x * z.x - z.y * z.y) + c.x;
+      float y = (2.0 * z.x * z.y) + c.y;
+      z = vec2(x, y);
+      if (length(z) > 4.0) break;
+      n += 1.0;
+    }
+    return n / 100.0;
+  }
+
+  void main() {
+    vec2 uv = vUv * 2.0 - 1.0;
+    uv *= zoom;
+    uv += mouse * 0.2 * intensity;
+    float t = time * 0.05 * intensity;
+    float n = fbm(uv + t);
+    float fractal = mandelbrot(uv * (1.0 + n * intensity));
+    float paranoiaEffect = paranoia * sin(length(uv) * 15.0 + t) * 0.3;
+    float euphoriaEffect = euphoria * cos(n * 8.0 + t) * 0.4;
+    float promptEffect = promptInfluence * sin(n * 10.0 + t) * 0.2;
+    vec3 color = mix(colorBase, colorAccent, fractal + euphoriaEffect - paranoiaEffect + promptEffect);
+    if (audioReactivity > 0.0) {
+      float audio = texture2D(noiseTex, uv).r * audioReactivity;
+      color += vec3(audio * 0.5, audio * 0.3, audio * 0.2);
+    }
+    gl_FragColor = vec4(color, 0.85);
+  }
+`;
+
+const overlayShader = `
+  uniform float time;
+  uniform float intensity;
+  uniform vec2 mouse;
+  varying vec2 vUv;
+
+  float noise(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 4; ++i) {
+      v += a * noise(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  void main() {
+    vec2 uv = vUv * 2.0 - 1.0;
+    float dist = length(uv - mouse);
+    float n = fbm(uv + time * 0.1);
+    float glow = exp(-dist * 5.0) * intensity;
+    vec3 color = vec3(n * 0.5, n * 0.7, n) * glow;
+    gl_FragColor = vec4(color, 0.3);
+  }
+`;
+
+// Three.js Initialization
+function initThree() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 1;
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  // Main Shader Plane
+  const geometry = new THREE.PlaneGeometry(2, 2);
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+      intensity: { value: config.intensity },
+      euphoria: { value: config.euphoria },
+      paranoia: { value: config.paranoia },
+      audioReactivity: { value: config.audioReactivity },
+      zoom: { value: config.zoom },
+      promptInfluence: { value: config.promptInfluence },
+      colorBase: { value: new THREE.Vector3(0.2, 0.4, 0.6) },
+      colorAccent: { value: new THREE.Vector3(0.8, 0.2, 0.4) },
+      mouse: { value: new THREE.Vector2(0, 0) },
+      noiseTex: { value: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/noise.png') }
+    },
+    vertexShader,
+    fragmentShader
+  });
+  mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+
+  // Overlay Shader for Hallucination Effects
+  const overlayMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+      intensity: { value: config.intensity },
+      mouse: { value: new THREE.Vector2(0, 0) }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: overlayShader,
+    transparent: true
+  });
+  overlayMesh = new THREE.Mesh(geometry, overlayMaterial);
+  scene.add(overlayMesh);
+}
+
+// Setup Controls
+function setupControls() {
+  select('#substanceSelect').changed(() => {
+    config.substance = select('#substanceSelect').value();
+    updateAudio();
+    updateEnvironment();
+  });
+
+  select('#environmentSelect').changed(() => {
+    config.environment = select('#environmentSelect').value();
+    updateEnvironment();
+  });
+
+  select('#phaseSelect').changed(() => {
+    config.phase = select('#phaseSelect').value();
+    updatePhase();
+  });
+
+  select('#intensitySlider').input(() => {
+    config.intensity = float(select('#intensitySlider').value());
+    select('#intensityValue').html(config.intensity.toFixed(2));
+  });
+
+  select('#euphoriaSlider').input(() => {
+    config.euphoria = float(select('#euphoriaSlider').value());
+    select('#euphoriaValue').html(config.euphoria.toFixed(2));
+  });
+
+  select('#paranoiaSlider').input(() => {
+    config.paranoia = float(select('#paranoiaSlider').value());
+    select('#paranoiaValue').html(config.paranoia.toFixed(2));
+  });
+
+  select('#audioSlider').input(() => {
+    config.audioReactivity = float(select('#audioSlider').value());
+    select('#audioValue').html(config.audioReactivity.toFixed(2));
+  });
+
+  select('#distortionSlider').input(() => {
+    config.distortion = float(select('#distortionSlider').value());
+    select('#distortionValue').html(config.distortion.toFixed(2));
+  });
+
+  select('#zoomSlider').input(() => {
+    config.zoom = float(select('#zoomSlider').value());
+    select('#zoomValue').html(config.zoom.toFixed(2));
+  });
+}
+
+// Update Audio
+function updateAudio() {
+  if (config.audioOn) {
+    synth.triggerRelease();
+    synth = new Tone.Synth({
+      oscillator: { type: synthOptions[config.substance].type },
+      envelope: { attack: 0.2, decay: 0.3, sustain: 0.6, release: 1.5 }
+    });
+    const panner = new Tone.Panner3D({
+      panningModel: 'HRTF',
+      distanceModel: 'inverse',
+      refDistance: 1,
+      maxDistance: 100
+    }).toDestination();
+    synth.connect(panner);
+    audioAnalyser = new Tone.Analyser('fft', 1024);
+    synth.connect(audioAnalyser);
+    synth.triggerAttack(synthOptions[config.substance].frequency);
+  }
+}
+
+// Update Environment
+function updateEnvironment() {
+  const colors = {
+    jungle: [new THREE.Vector3(0.1, 0.5, 0.3), new THREE.Vector3(0.6, 0.8, 0.2)],
+    cosmic: [new THREE.Vector3(0.2, 0.2, 0.6), new THREE.Vector3(0.8, 0.4, 0.8)],
+    alien: [new THREE.Vector3(0.3, 0.6, 0.6), new THREE.Vector3(0.7, 0.2, 0.7)],
+    rebirth: [new THREE.Vector3(0.5, 0.3, 0.2), new THREE.Vector3(0.9, 0.5, 0.4)]
+  };
+  mesh.material.uniforms.colorBase.value = colors[config.environment][0];
+  mesh.material.uniforms.colorAccent.value = colors[config.environment][1];
+}
+
+// Update Phase
+function updatePhase() {
+  const phaseSettings = {
+    onset: { intensity: 0.3, euphoria: 0.4, paranoia: 0.0, zoom: 1.0 },
+    peak: { intensity: 0.7, euphoria: 0.8, paranoia: 0.2, zoom: 1.5 },
+    collapse: { intensity: 0.9, euphoria: 0.6, paranoia: 0.4, zoom: 2.0 },
+    dissolution: { intensity: 1.0, euphoria: 0.5, paranoia: 0.3, zoom: 2.5 }
+  };
+  const settings = phaseSettings[config.phase];
+  config.intensity = settings.intensity;
+  config.euphoria = settings.euphoria;
+  config.paranoia = settings.paranoia;
+  config.zoom = settings.zoom;
+  select('#intensitySlider').value(config.intensity);
+  select('#intensityValue').html(config.intensity.toFixed(2));
+  select('#euphoriaSlider').value(config.euphoria);
+  select('#euphoriaValue').html(config.euphoria.toFixed(2));
+  select('#paranoiaSlider').value(config.paranoia);
+  select('#paranoiaValue').html(config.paranoia.toFixed(2));
+  select('#zoomSlider').value(config.zoom);
+  select('#zoomValue').html(config.zoom.toFixed(2));
+}
+
+// Apply Prompt
+function applyPrompt() {
+  const prompt = select('#promptInput').value().toLowerCase();
+  config.promptInfluence = prompt.length > 0 ? 0.5 : 0.0;
+  if (prompt.includes('eyes')) config.distortion += 0.2;
+  if (prompt.includes('fractal')) config.zoom *= 1.2;
+  if (prompt.includes('color')) config.euphoria += 0.1;
+}
+
+// Ground Simulation
+function groundSimulation() {
+  config.grounded = true;
+  config.intensity = 0.1;
+  config.euphoria = 0.1;
+  config.paranoia = 0.0;
+  config.audioReactivity = 0.0;
+  config.distortion = 0.0;
+  config.zoom = 1.0;
+  config.promptInfluence = 0.0;
+  select('#intensitySlider').value(config.intensity);
+  select('#intensityValue').html(config.intensity.toFixed(2));
+  select('#euphoriaSlider').value(config.euphoria);
+  select('#euphoriaValue').html(config.euphoria.toFixed(2));
+  select('#paranoiaSlider').value(config.paranoia);
+  select('#paranoiaValue').html(config.paranoia.toFixed(2));
+  select('#audioSlider').value(config.audioReactivity);
+  select('#audioValue').html(config.audioReactivity.toFixed(2));
+  select('#distortionSlider').value(config.distortion);
+  select('#distortionValue').html(config.distortion.toFixed(2));
+  select('#zoomSlider').value(config.zoom);
+  select('#zoomValue').html(config.zoom.toFixed(2));
+  if (config.audioOn) {
+    synth.triggerRelease();
+    config.audioOn = false;
+  }
+}
+
+// Randomize Settings
+function randomizeSettings() {
+  config.substance = random(['lsd', 'psilocybin', 'dmt', 'ketamine']);
+  config.environment = random(['jungle', 'cosmic', 'alien', 'rebirth']);
+  config.phase = random(['onset', 'peak', 'collapse', 'dissolution']);
+  config.intensity = random(0.1, 1.0);
+  config.euphoria = random(0.0, 1.0);
+  config.paranoia = random(0.0, 0.5);
+  config.audioReactivity = random(0.0, 1.0);
+  config.distortion = random(0.0, 1.0);
+  config.zoom = random(0.5, 3.0);
+
+  select('#substanceSelect').value(config.substance);
+  select('#environmentSelect').value(config.environment);
+  select('#phaseSelect').value(config.phase);
+  select('#intensitySlider').value(config.intensity);
+  select('#intensityValue').html(config.intensity.toFixed(2));
+  select('#euphoriaSlider').value(config.euphoria);
+  select('#euphoriaValue').html(config.euphoria.toFixed(2));
+  select('#paranoiaSlider').value(config.paranoia);
+  select('#paranoiaValue').html(config.paranoia.toFixed(2));
+  select('#audioSlider').value(config.audioReactivity);
+  select('#audioValue').html(config.audioReactivity.toFixed(2));
+  select('#distortionSlider').value(config.distortion);
+  select('#distortionValue').html(config.distortion.toFixed(2));
+  select('#zoomSlider').value(config.zoom);
+  select('#zoomValue').html(config.zoom.toFixed(2));
+
+  updateAudio();
+  updateEnvironment();
+}
+
+// Reset Settings
+function resetSettings() {
+  config = {
+    substance: 'lsd',
+    environment: 'jungle',
+    phase: 'onset',
+    intensity: 0.5,
+    euphoria: 0.5,
+    paranoia: 0.0,
+    audioReactivity: 0.5,
+    distortion: 0.3,
+    zoom: 1.0,
+    audioOn: false,
+    grounded: false,
+    promptInfluence: 0.0
+  };
+  select('#substanceSelect').value(config.substance);
+  select('#environmentSelect').value(config.environment);
+  select('#phaseSelect').value(config.phase);
+  select('#intensitySlider').value(config.intensity);
+  select('#intensityValue').html(config.intensity.toFixed(2));
+  select('#euphoriaSlider').value(config.euphoria);
+  select('#euphoriaValue').html(config.euphoria.toFixed(2));
+  select('#paranoiaSlider').value(config.paranoia);
+  select('#paranoiaValue').html(config.paranoia.toFixed(2));
+  select('#audioSlider').value(config.audioReactivity);
+  select('#audioValue').html(config.audioReactivity.toFixed(2));
+  select('#distortionSlider').value(config.distortion);
+  select('#distortionValue').html(config.distortion.toFixed(2));
+  select('#zoomSlider').value(config.zoom);
+  select('#zoomValue').html(config.zoom.toFixed(2));
+  if (config.audioOn) {
+    synth.triggerRelease();
+    config.audioOn = false;
+  }
+  updateEnvironment();
+}
+
+// Three.js Render Loop
+function animate() {
+  requestAnimationFrame(animate);
+  if (!config.grounded) {
+    mesh.material.uniforms.time.value = time;
+    mesh.material.uniforms.intensity.value = config.intensity;
+    mesh.material.uniforms.euphoria.value = config.euphoria;
+    mesh.material.uniforms.paranoia.value = config.paranoia;
+    mesh.material.uniforms.audioReactivity.value = config.audioReactivity;
+    mesh.material.uniforms.zoom.value = config.zoom;
+    mesh.material.uniforms.promptInfluence.value = config.promptInfluence;
+    mesh.material.uniforms.mouse.value.set(mouse.x, mouse.y);
+    mesh.material.uniforms.distortion.value = config.distortion;
+
+    overlayMesh.material.uniforms.time.value = time;
+    overlayMesh.material.uniforms.intensity.value = config.intensity;
+    overlayMesh.material.uniforms.mouse.value.set(mouse.x, mouse.y);
+
+    if (config.audioOn && audioAnalyser) {
+      const fft = audioAnalyser.getValue();
+      let audioLevel = map(fft[0], -100, 0, 0, 1);
+      mesh.material.uniforms.audioReactivity.value *= audioLevel;
+      if (config.substance === 'dmt') {
+        synth.detune = audioLevel * synthOptions[config.substance].detune * 100;
+      }
+    }
+  } else {
+    mesh.material.uniforms.intensity.value = 0.1;
+    overlayMesh.material.uniforms.intensity.value = 0.0;
+  }
+  renderer.render(scene, camera);
+  time += 0.01 * config.intensity;
+}
+
+// Mouse Interaction
+document.addEventListener('mousemove', (event) => {
+  if (!config.grounded) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  }
+});
+
+document.addEventListener('mousedown', () => {
+  if (!config.grounded) {
+    config.distortion += 0.1;
+    if (config.distortion > 1.0) config.distortion = 1.0;
+    select('#distortionSlider').value(config.distortion);
+    select('#distortionValue').html(config.distortion.toFixed(2));
+  }
+});
+
+// Handle Window Resize
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// Initialize
+initThree();
+setupControls();
+animate();
+</script>
+</body>
+</html>

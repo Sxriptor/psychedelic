@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Pixel Morphing Studio (1920x1080)</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: 'Courier New', monospace;
+        }
+        canvas { 
+            display: block; 
+            width: 1920px; 
+            height: 1080px; 
+        }
+        
+        /* Control Panel Styles */
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff00;
+            max-width: 300px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .controls h3 {
+            margin: 0 0 15px 0;
+            text-align: center;
+            color: #ffff00;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 5px;
+            background: #111;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            border-radius: 3px;
+        }
+        
+        .control-group input[type="range"] {
+            background: #111;
+        }
+        
+        .toggle-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .toggle-btn:hover {
+            background: #ffff00;
+        }
+        
+        .toggle-btn.active {
+            background: #ff0000;
+            color: #fff;
+        }
+        
+        .preset-btn {
+            background: #0000ff;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 2px;
+            font-size: 12px;
+        }
+        
+        .preset-btn:hover {
+            background: #4444ff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    
+    <!-- Control Panel -->
+    <div class="controls">
+        <h3>🎨 Pixel Morph Studio</h3>
+        
+        <div class="control-group">
+            <label>Effect Type:</label>
+            <select id="effectType">
+                <option value="noise">Noise Morphing</option>
+                <option value="fading">Fading Waves</option>
+                <option value="graphing">Mathematical Graphing</option>
+                <option value="trippy">Trippy Kaleidoscope</option>
+                <option value="simulation">Particle Simulation</option>
+                <option value="fractal">Fractal Patterns</option>
+                <option value="audio">Audio Reactive</option>
+                <option value="neural">Neural Network</option>
+                <option value="fluid">Fluid Dynamics</option>
+                <option value="smoke">Smoke Simulation</option>
+                <option value="fire">Fire Simulation</option>
+                <option value="plasma">Plasma Field</option>
+                <option value="galaxy">Galaxy Simulation</option>
+                <option value="quantum">Quantum Particles</option>
+                <option value="cellular">Cellular Automata</option>
+                <option value="weather">Weather Patterns</option>
+                <option value="crystal">Crystal Growth</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Speed: <span id="speedValue">0.5</span></label>
+            <input type="range" id="speed" min="0.1" max="2.0" step="0.1" value="0.5">
+        </div>
+        
+        <div class="control-group">
+            <label>Intensity: <span id="intensityValue">1.0</span></label>
+            <input type="range" id="intensity" min="0.1" max="3.0" step="0.1" value="1.0">
+        </div>
+        
+        <div class="control-group">
+            <label>Color Mode:</label>
+            <select id="colorMode">
+                <option value="grayscale">Grayscale</option>
+                <option value="rgb">RGB Rainbow</option>
+                <option value="hsv">HSV Spectrum</option>
+                <option value="neon">Neon Glow</option>
+                <option value="fire">Fire Palette</option>
+                <option value="ocean">Ocean Blues</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Resolution: <span id="resolutionValue">10</span></label>
+            <input type="range" id="resolution" min="1" max="200" step="1" value="10">
+        </div>
+        
+        <div class="control-group">
+            <button class="toggle-btn" id="pauseBtn">⏸️ Pause</button>
+            <button class="toggle-btn" id="fullscreenBtn">🔍 Fullscreen</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Quick Presets:</label>
+            <button class="preset-btn" onclick="loadPreset('acid')">Acid Trip</button>
+            <button class="preset-btn" onclick="loadPreset('matrix')">Matrix</button>
+            <button class="preset-btn" onclick="loadPreset('ocean')">Ocean Waves</button>
+            <button class="preset-btn" onclick="loadPreset('fire')">Fire Storm</button>
+            <button class="preset-btn" onclick="loadPreset('neural')">Neural Dreams</button>
+            <button class="preset-btn" onclick="loadPreset('fractal')">Fractal World</button>
+            <button class="preset-btn" onclick="loadPreset('galaxy')">Galaxy</button>
+            <button class="preset-btn" onclick="loadPreset('quantum')">Quantum</button>
+            <button class="preset-btn" onclick="loadPreset('crystal')">Crystal</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const gl = canvas.getContext('webgl');
+
+        if (!gl) {
+            alert('WebGL not supported!');
+            throw new Error('WebGL not supported');
+        }
+
+        // Global variables for controls
+        let currentEffect = 'noise';
+        let speed = 0.5;
+        let intensity = 1.0;
+        let colorMode = 'grayscale';
+        let resolution = 10;
+        let isPaused = false;
+        let programs = {};
+
+        // Vertex shader (same for all effects)
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        // Fragment shader templates for different effects
+        const fragmentShaders = {
+            // Basic noise morphing
+            noise: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value); // Grayscale
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14)); // RGB
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0); // HSV
+                    if (mode == 3) return vec3(0.0, value, value * 0.5); // Neon
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0); // Fire
+                    if (mode == 5) return vec3(0.0, value * 0.5, value); // Ocean
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    float pattern1 = noise(pixelated * 10.0 + vec2(u_time * u_speed * 0.1, 0.0));
+                    float pattern2 = noise(pixelated * 10.0 + vec2(0.0, u_time * u_speed * 0.1 + 10.0));
+                    float t = sin(u_time * u_speed * 0.5) * 0.5 + 0.5;
+                    float value = mix(pattern1, pattern2, t) * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Fading wave effects
+            fading: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    float wave1 = sin(pixelated.x * 10.0 + u_time * u_speed) * 0.5 + 0.5;
+                    float wave2 = cos(pixelated.y * 8.0 + u_time * u_speed * 0.7) * 0.5 + 0.5;
+                    float wave3 = sin(length(pixelated - 0.5) * 15.0 - u_time * u_speed * 1.2) * 0.5 + 0.5;
+                    
+                    float value = (wave1 + wave2 + wave3) / 3.0 * u_intensity;
+                    value = pow(value, 1.5); // Enhance contrast
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Mathematical graphing
+            graphing: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    vec2 p = (pixelated - 0.5) * 4.0;
+                    
+                    // Complex mathematical functions
+                    float func1 = sin(p.x * 3.0 + u_time * u_speed) * cos(p.y * 2.0 + u_time * u_speed * 0.5);
+                    float func2 = tan(p.x * 0.5 + u_time * u_speed * 0.3) * sin(p.y * 1.5);
+                    float func3 = pow(sin(p.x + u_time * u_speed), 2.0) + pow(cos(p.y + u_time * u_speed * 0.7), 2.0);
+                    
+                    float value = (func1 + func2 + func3) / 3.0 * u_intensity;
+                    value = abs(value); // Make positive
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Trippy kaleidoscope effects
+            trippy: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    vec2 p = pixelated - 0.5;
+                    
+                    // Kaleidoscope effect
+                    float angle = atan(p.y, p.x);
+                    float radius = length(p);
+                    
+                    // Mirror the angle
+                    angle = mod(angle, 3.14159 / 6.0);
+                    
+                    // Create trippy patterns
+                    float pattern1 = sin(angle * 12.0 + u_time * u_speed) * 0.5 + 0.5;
+                    float pattern2 = cos(radius * 20.0 - u_time * u_speed * 2.0) * 0.5 + 0.5;
+                    float pattern3 = sin(angle * 8.0 + radius * 15.0 + u_time * u_speed * 1.5) * 0.5 + 0.5;
+                    
+                    float value = (pattern1 + pattern2 + pattern3) / 3.0 * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Particle simulation
+            simulation: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Simulate multiple particles
+                    float value = 0.0;
+                    for (int i = 0; i < 5; i++) {
+                        float fi = float(i);
+                        vec2 particle = vec2(
+                            sin(u_time * u_speed * (0.5 + fi * 0.3)) * 0.3 + 0.5,
+                            cos(u_time * u_speed * (0.7 + fi * 0.2)) * 0.3 + 0.5
+                        );
+                        float dist = length(pixelated - particle);
+                        value += exp(-dist * 10.0) * (0.5 + 0.5 * sin(u_time * u_speed + fi));
+                    }
+                    
+                    value = value * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Fractal patterns
+            fractal: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    vec2 c = (pixelated - 0.5) * 4.0;
+                    
+                    vec2 z = vec2(0.0);
+                    float value = 0.0;
+                    
+                    // Mandelbrot-like fractal
+                    for (int i = 0; i < 20; i++) {
+                        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c + vec2(sin(u_time * u_speed * 0.1), cos(u_time * u_speed * 0.1)) * 0.1;
+                        if (length(z) > 2.0) break;
+                        value += 1.0;
+                    }
+                    
+                    value = value / 20.0 * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Audio reactive (simulated)
+            audio: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Simulate audio frequencies
+                    float bass = sin(u_time * u_speed * 0.5) * 0.5 + 0.5;
+                    float mid = sin(u_time * u_speed * 2.0) * 0.5 + 0.5;
+                    float treble = sin(u_time * u_speed * 8.0) * 0.5 + 0.5;
+                    
+                    // Create frequency visualization
+                    float freq1 = sin(pixelated.x * 50.0 + u_time * u_speed * 10.0) * bass;
+                    float freq2 = sin(pixelated.y * 30.0 + u_time * u_speed * 15.0) * mid;
+                    float freq3 = sin(length(pixelated - 0.5) * 40.0 + u_time * u_speed * 20.0) * treble;
+                    
+                    float value = (freq1 + freq2 + freq3) / 3.0 * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Neural network simulation
+            neural: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float sigmoid(float x) {
+                    return 1.0 / (1.0 + exp(-x));
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Simulate neural network nodes
+                    float value = 0.0;
+                    for (int i = 0; i < 8; i++) {
+                        float fi = float(i);
+                        vec2 node = vec2(
+                            sin(u_time * u_speed * (0.3 + fi * 0.2)) * 0.4 + 0.5,
+                            cos(u_time * u_speed * (0.5 + fi * 0.3)) * 0.4 + 0.5
+                        );
+                        
+                        float activation = sigmoid(length(pixelated - node) * 5.0 - 2.0);
+                        float weight = sin(u_time * u_speed + fi * 2.0) * 0.5 + 0.5;
+                        value += activation * weight;
+                    }
+                    
+                    value = value / 8.0 * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Fluid dynamics simulation
+            fluid: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Fluid simulation with curl and pressure
+                    vec2 p = pixelated * 4.0 - 2.0;
+                    float t = u_time * u_speed;
+                    
+                    // Velocity field
+                    vec2 v = vec2(
+                        sin(p.y + t) + cos(p.x * 0.5 + t * 0.7),
+                        cos(p.x + t * 0.8) + sin(p.y * 0.5 + t * 1.2)
+                    );
+                    
+                    // Curl of velocity field
+                    float curl = length(v) * 0.5;
+                    
+                    // Pressure field
+                    float pressure = sin(p.x * 2.0 + t) * cos(p.y * 2.0 + t * 0.5);
+                    
+                    // Combine for fluid effect
+                    float value = (curl + pressure * 0.5) * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Smoke simulation
+            smoke: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Smoke simulation with turbulence
+                    vec2 p = pixelated;
+                    float t = u_time * u_speed;
+                    
+                    // Multiple noise layers for smoke
+                    float smoke1 = noise(p * 8.0 + vec2(t * 0.5, 0.0));
+                    float smoke2 = noise(p * 16.0 + vec2(0.0, t * 0.3));
+                    float smoke3 = noise(p * 32.0 + vec2(t * 0.2, t * 0.1));
+                    
+                    // Turbulence
+                    float turb = sin(p.x * 20.0 + t) * cos(p.y * 15.0 + t * 0.7) * 0.5 + 0.5;
+                    
+                    // Rising smoke effect
+                    float rise = 1.0 - p.y + sin(t * 2.0) * 0.1;
+                    
+                    float value = (smoke1 + smoke2 + smoke3) / 3.0 * turb * rise * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Fire simulation
+            fire: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Fire simulation
+                    vec2 p = pixelated;
+                    float t = u_time * u_speed;
+                    
+                    // Base fire shape
+                    float fire_base = 1.0 - p.y + sin(p.x * 10.0) * 0.1;
+                    fire_base = max(0.0, fire_base);
+                    
+                    // Fire turbulence
+                    float turb1 = noise(p * 20.0 + vec2(t * 2.0, 0.0));
+                    float turb2 = noise(p * 40.0 + vec2(0.0, t * 3.0));
+                    float turb3 = noise(p * 80.0 + vec2(t * 1.5, t * 2.5));
+                    
+                    // Rising flames
+                    float flames = sin(p.x * 15.0 + t * 4.0) * cos(p.y * 8.0 + t * 2.0) * 0.5 + 0.5;
+                    
+                    float value = fire_base * (turb1 + turb2 + turb3) / 3.0 * flames * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Plasma field simulation
+            plasma: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Plasma field simulation
+                    vec2 p = (pixelated - 0.5) * 4.0;
+                    float t = u_time * u_speed;
+                    
+                    // Electric field components
+                    float ex = sin(p.x + t) + sin(p.y * 0.5 + t * 0.7);
+                    float ey = cos(p.y + t * 0.8) + cos(p.x * 0.5 + t * 1.2);
+                    
+                    // Magnetic field
+                    float bz = sin(p.x * 2.0 + t) * cos(p.y * 2.0 + t * 0.5);
+                    
+                    // Plasma density
+                    float density = sin(length(p) * 3.0 - t * 2.0) * 0.5 + 0.5;
+                    
+                    // Combine fields
+                    float value = (ex + ey + bz) * density * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Galaxy simulation
+            galaxy: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Galaxy simulation
+                    vec2 p = pixelated - 0.5;
+                    float t = u_time * u_speed;
+                    
+                    // Spiral arms
+                    float angle = atan(p.y, p.x);
+                    float radius = length(p);
+                    
+                    // Multiple spiral arms
+                    float spiral1 = sin(angle * 3.0 + radius * 10.0 - t * 0.5) * 0.5 + 0.5;
+                    float spiral2 = sin(angle * 5.0 + radius * 15.0 - t * 0.7) * 0.5 + 0.5;
+                    float spiral3 = sin(angle * 7.0 + radius * 20.0 - t * 0.3) * 0.5 + 0.5;
+                    
+                    // Central bulge
+                    float bulge = exp(-radius * 8.0);
+                    
+                    // Star field background
+                    float stars = noise(p * 100.0 + t * 0.1) * 0.3;
+                    
+                    float value = (spiral1 + spiral2 + spiral3) / 3.0 * (1.0 - radius) + bulge + stars;
+                    value = value * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Quantum particles simulation
+            quantum: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Quantum particle simulation
+                    vec2 p = (pixelated - 0.5) * 4.0;
+                    float t = u_time * u_speed;
+                    
+                    // Wave function
+                    float psi = 0.0;
+                    for (int i = 0; i < 5; i++) {
+                        float fi = float(i);
+                        float k = 2.0 + fi * 1.5;
+                        float omega = 1.0 + fi * 0.5;
+                        psi += sin(k * p.x - omega * t) * cos(k * p.y - omega * t * 0.7) / (1.0 + fi);
+                    }
+                    
+                    // Probability density
+                    float prob = psi * psi;
+                    
+                    // Quantum tunneling effect
+                    float barrier = sin(p.x * 5.0 + t) * 0.5 + 0.5;
+                    float tunnel = exp(-barrier * 2.0);
+                    
+                    float value = prob * tunnel * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Cellular automata simulation
+            cellular: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Cellular automata simulation
+                    vec2 p = pixelated;
+                    float t = u_time * u_speed;
+                    
+                    // Grid-based cellular automata
+                    vec2 cell = floor(p * 20.0);
+                    float cell_value = noise(cell * 0.1 + t * 0.1);
+                    
+                    // Conway's Game of Life-like rules
+                    float neighbors = 0.0;
+                    for (int i = -1; i <= 1; i++) {
+                        for (int j = -1; j <= 1; j++) {
+                            if (i == 0 && j == 0) continue;
+                            vec2 neighbor = cell + vec2(float(i), float(j));
+                            neighbors += noise(neighbor * 0.1 + t * 0.1);
+                        }
+                    }
+                    
+                    // Evolution rules
+                    float alive = step(0.5, cell_value);
+                    float new_state = 0.0;
+                    
+                    if (alive > 0.5) {
+                        new_state = step(2.0, neighbors) * step(neighbors, 4.0);
+                    } else {
+                        new_state = step(2.5, neighbors) * step(neighbors, 3.5);
+                    }
+                    
+                    float value = new_state * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Weather patterns simulation
+            weather: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Weather simulation
+                    vec2 p = pixelated;
+                    float t = u_time * u_speed;
+                    
+                    // Pressure systems
+                    float pressure = sin(p.x * 3.0 + t) * cos(p.y * 2.0 + t * 0.7);
+                    
+                    // Temperature gradient
+                    float temp = 1.0 - p.y + sin(t * 0.5) * 0.2;
+                    
+                    // Humidity
+                    float humidity = noise(p * 10.0 + t * 0.3);
+                    
+                    // Wind patterns
+                    float wind_x = sin(p.y * 5.0 + t * 2.0);
+                    float wind_y = cos(p.x * 4.0 + t * 1.5);
+                    float wind = length(vec2(wind_x, wind_y));
+                    
+                    // Precipitation
+                    float rain = noise(p * 20.0 + t * 5.0) * humidity;
+                    
+                    float value = (pressure + temp + humidity + wind + rain) / 5.0 * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `,
+
+            // Crystal growth simulation
+            crystal: `
+                precision mediump float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform float u_speed;
+                uniform float u_intensity;
+                uniform float u_resolution_factor;
+                uniform int u_color_mode;
+
+                vec3 getColor(float value, int mode) {
+                    if (mode == 0) return vec3(value);
+                    if (mode == 1) return vec3(value, sin(value * 3.14), cos(value * 3.14));
+                    if (mode == 2) return vec3(value, 0.5 + 0.5 * sin(value * 6.28), 1.0);
+                    if (mode == 3) return vec3(0.0, value, value * 0.5);
+                    if (mode == 4) return vec3(value, value * 0.5, 0.0);
+                    if (mode == 5) return vec3(0.0, value * 0.5, value);
+                    return vec3(value);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution;
+                    vec2 pixelated = floor(uv * u_resolution_factor) / u_resolution_factor;
+                    
+                    // Crystal growth simulation
+                    vec2 p = (pixelated - 0.5) * 4.0;
+                    float t = u_time * u_speed;
+                    
+                    // Crystal lattice structure
+                    float lattice1 = sin(p.x * 10.0 + t) * cos(p.y * 10.0 + t * 0.5);
+                    float lattice2 = sin(p.x * 15.0 + t * 0.7) * cos(p.y * 15.0 + t * 1.2);
+                    float lattice3 = sin(p.x * 20.0 + t * 0.3) * cos(p.y * 20.0 + t * 0.8);
+                    
+                    // Growth fronts
+                    float growth = 0.0;
+                    for (int i = 0; i < 6; i++) {
+                        float fi = float(i);
+                        float angle = fi * 3.14159 / 3.0;
+                        vec2 direction = vec2(cos(angle), sin(angle));
+                        float front = dot(p, direction) + t * (1.0 + fi * 0.2);
+                        growth += sin(front * 5.0) * 0.5 + 0.5;
+                    }
+                    
+                    // Facets and edges
+                    float facets = abs(sin(p.x * 8.0)) + abs(sin(p.y * 8.0));
+                    
+                    float value = (lattice1 + lattice2 + lattice3) / 3.0 * growth * facets * u_intensity;
+                    
+                    gl_FragColor = vec4(getColor(value, u_color_mode), 1.0);
+                }
+            `
+        };
+
+        // Compile shader
+        function compileShader(source, type) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        // Create shader program
+        function createProgram(effectName) {
+            const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
+            const fragmentShader = compileShader(fragmentShaders[effectName], gl.FRAGMENT_SHADER);
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error('Program link error:', gl.getProgramInfoLog(program));
+                throw new Error('Program link failed');
+            }
+            return program;
+        }
+
+        // Initialize all programs
+        Object.keys(fragmentShaders).forEach(effect => {
+            programs[effect] = createProgram(effect);
+        });
+
+        // Set up vertices for full-screen quad
+        const vertices = new Float32Array([
+            -1, -1,  1, -1,  -1, 1,
+             1, -1,   1, 1,  -1, 1
+        ]);
+        const vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        // Set up attributes and uniforms for current program
+        function setupProgram(program) {
+            gl.useProgram(program);
+            
+            const aPosition = gl.getAttribLocation(program, 'a_position');
+            gl.enableVertexAttribArray(aPosition);
+            gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+            // Get uniform locations
+            const uTime = gl.getUniformLocation(program, 'u_time');
+            const uResolution = gl.getUniformLocation(program, 'u_resolution');
+            const uSpeed = gl.getUniformLocation(program, 'u_speed');
+            const uIntensity = gl.getUniformLocation(program, 'u_intensity');
+            const uResolutionFactor = gl.getUniformLocation(program, 'u_resolution_factor');
+            const uColorMode = gl.getUniformLocation(program, 'u_color_mode');
+
+            return { uTime, uResolution, uSpeed, uIntensity, uResolutionFactor, uColorMode };
+        }
+
+        let currentProgram = programs[currentEffect];
+        let uniforms = setupProgram(currentProgram);
+
+        // Set initial uniforms
+        gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
+        gl.uniform1f(uniforms.uSpeed, speed);
+        gl.uniform1f(uniforms.uIntensity, intensity);
+        gl.uniform1f(uniforms.uResolutionFactor, resolution);
+        gl.uniform1i(uniforms.uColorMode, getColorModeIndex(colorMode));
+
+        // Control event listeners
+        document.getElementById('effectType').addEventListener('change', (e) => {
+            currentEffect = e.target.value;
+            currentProgram = programs[currentEffect];
+            uniforms = setupProgram(currentProgram);
+            gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = speed.toFixed(1);
+            if (uniforms.uSpeed) gl.uniform1f(uniforms.uSpeed, speed);
+        });
+
+        document.getElementById('intensity').addEventListener('input', (e) => {
+            intensity = parseFloat(e.target.value);
+            document.getElementById('intensityValue').textContent = intensity.toFixed(1);
+            if (uniforms.uIntensity) gl.uniform1f(uniforms.uIntensity, intensity);
+        });
+
+        document.getElementById('colorMode').addEventListener('change', (e) => {
+            colorMode = e.target.value;
+            if (uniforms.uColorMode) gl.uniform1i(uniforms.uColorMode, getColorModeIndex(colorMode));
+        });
+
+        document.getElementById('resolution').addEventListener('input', (e) => {
+            resolution = parseInt(e.target.value);
+            document.getElementById('resolutionValue').textContent = resolution;
+            if (uniforms.uResolutionFactor) gl.uniform1f(uniforms.uResolutionFactor, resolution);
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.textContent = isPaused ? '▶️ Play' : '⏸️ Pause';
+            btn.classList.toggle('active', isPaused);
+        });
+
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                canvas.requestFullscreen();
+            }
+        });
+
+        function getColorModeIndex(mode) {
+            const modes = ['grayscale', 'rgb', 'hsv', 'neon', 'fire', 'ocean'];
+            return modes.indexOf(mode);
+        }
+
+        // Preset configurations
+        const presets = {
+            acid: { effect: 'trippy', speed: 1.5, intensity: 2.0, color: 'rgb', resolution: 15 },
+            matrix: { effect: 'noise', speed: 0.3, intensity: 1.5, color: 'neon', resolution: 8 },
+            ocean: { effect: 'fading', speed: 0.8, intensity: 1.2, color: 'ocean', resolution: 12 },
+            fire: { effect: 'fire', speed: 1.2, intensity: 2.5, color: 'fire', resolution: 10 },
+            neural: { effect: 'neural', speed: 0.6, intensity: 1.8, color: 'hsv', resolution: 20 },
+            fractal: { effect: 'fractal', speed: 0.4, intensity: 1.3, color: 'rgb', resolution: 25 },
+            galaxy: { effect: 'galaxy', speed: 0.5, intensity: 1.6, color: 'hsv', resolution: 30 },
+            quantum: { effect: 'quantum', speed: 0.8, intensity: 2.2, color: 'neon', resolution: 40 },
+            crystal: { effect: 'crystal', speed: 0.3, intensity: 1.4, color: 'ocean', resolution: 50 }
+        };
+
+        function loadPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+
+            // Update controls
+            document.getElementById('effectType').value = preset.effect;
+            document.getElementById('speed').value = preset.speed;
+            document.getElementById('intensity').value = preset.intensity;
+            document.getElementById('colorMode').value = preset.color;
+            document.getElementById('resolution').value = preset.resolution;
+
+            // Update display values
+            document.getElementById('speedValue').textContent = preset.speed.toFixed(1);
+            document.getElementById('intensityValue').textContent = preset.intensity.toFixed(1);
+            document.getElementById('resolutionValue').textContent = preset.resolution;
+
+            // Update shader
+            currentEffect = preset.effect;
+            currentProgram = programs[currentEffect];
+            uniforms = setupProgram(currentProgram);
+            
+            // Update uniforms
+            gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
+            gl.uniform1f(uniforms.uSpeed, preset.speed);
+            gl.uniform1f(uniforms.uIntensity, preset.intensity);
+            gl.uniform1f(uniforms.uResolutionFactor, preset.resolution);
+            gl.uniform1i(uniforms.uColorMode, getColorModeIndex(preset.color));
+
+            // Update global variables
+            speed = preset.speed;
+            intensity = preset.intensity;
+            colorMode = preset.color;
+            resolution = preset.resolution;
+        }
+
+        // Animation loop
+        let startTime = performance.now();
+        function animate() {
+            if (!isPaused) {
+                const time = (performance.now() - startTime) / 1000;
+                if (uniforms.uTime) gl.uniform1f(uniforms.uTime, time);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        animate();
+    </script>
+</body>
+</html>

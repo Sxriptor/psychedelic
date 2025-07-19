@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathematical Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        .controls {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            transition: transform 0.4s ease-in-out;
+            z-index: 1000;
+        }
+
+        .controls.hidden {
+            transform: translateX(-100%);
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #0f0f23 0%, #000 100%);
+            transition: margin-left 0.4s ease-in-out;
+        }
+
+        .canvas-container.full-width {
+            margin-left: -350px;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .keyboard-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #aaa;
+            font-size: 11px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .keyboard-hint:hover {
+            opacity: 1;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section h3 {
+            margin-bottom: 15px;
+            color: #4ecdc4;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .value-display {
+            float: right;
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .equation-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .preset-btn {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: linear-gradient(45deg, rgba(255, 107, 107, 0.2), rgba(78, 205, 196, 0.2));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: linear-gradient(45deg, rgba(255, 107, 107, 0.4), rgba(78, 205, 196, 0.4));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-picker {
+            width: 100%;
+            height: 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        .active-render {
+            animation: pulse 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h1>Mathematical Art Generator</h1>
+            
+            <div class="section">
+                <h3>Mathematical Constants</h3>
+                <div class="equation-display" id="constantsDisplay" style="font-size: 10px; line-height: 1.2;">
+                    π = 3.14159265358979...<br>
+                    e = 2.71828182845904...<br>
+                    φ = 1.61803398874989...<br>
+                    τ = 6.28318530717958...<br>
+                    √2 = 1.41421356237309...
+                </div>
+            </div>
+                <h3>Equation Type</h3>
+                <select id="equationType">
+                    <option value="parametric">Parametric Curves</option>
+                    <option value="polar">Polar Equations</option>
+                    <option value="complex">Complex Functions</option>
+                    <option value="fractal">Fractal Patterns</option>
+                    <option value="wave">Wave Interference</option>
+                    <option value="lissajous">Lissajous Curves</option>
+                    <option value="mandelbrot">Mandelbrot Zoom</option>
+                    <option value="pi">π (Pi) Visualization</option>
+                    <option value="e">e (Euler's Number)</option>
+                    <option value="phi">φ (Golden Ratio)</option>
+                    <option value="tau">τ (Tau = 2π)</option>
+                    <option value="sqrt2">√2 (Pythagoras)</option>
+                    <option value="fibonacci">Fibonacci Spiral</option>
+                    <option value="primes">Prime Numbers</option>
+                </select>
+                <div class="equation-display" id="equationDisplay"></div>
+            </div>
+
+            <div class="section">
+                <h3>Mathematical Parameters</h3>
+                <div class="control-group">
+                    <label>Frequency A <span class="value-display" id="freqAValue">1.0</span></label>
+                    <input type="range" id="freqA" min="0.1" max="10" step="0.1" value="1">
+                </div>
+                <div class="control-group">
+                    <label>Frequency B <span class="value-display" id="freqBValue">1.0</span></label>
+                    <input type="range" id="freqB" min="0.1" max="10" step="0.1" value="1">
+                </div>
+                <div class="control-group">
+                    <label>Amplitude <span class="value-display" id="amplitudeValue">100</span></label>
+                    <input type="range" id="amplitude" min="10" max="300" step="5" value="100">
+                </div>
+                <div class="control-group">
+                    <label>Phase Shift <span class="value-display" id="phaseValue">0</span></label>
+                    <input type="range" id="phase" min="0" max="6.28" step="0.1" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Complexity <span class="value-display" id="complexityValue">1000</span></label>
+                    <input type="range" id="complexity" min="100" max="5000" step="50" value="1000">
+                </div>
+                <div class="control-group">
+                    <label>Time Scale <span class="value-display" id="timeScaleValue">1.0</span></label>
+                    <input type="range" id="timeScale" min="0.1" max="5" step="0.1" value="1">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Visual Style</h3>
+                <div class="control-group">
+                    <label>Render Mode</label>
+                    <select id="renderMode">
+                        <option value="line">Flowing Lines</option>
+                        <option value="dots">Particle Field</option>
+                        <option value="glow">Neon Glow</option>
+                        <option value="rainbow">Rainbow Trail</option>
+                        <option value="plasma">Plasma Effect</option>
+                        <option value="wireframe">Wireframe</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Primary Color</label>
+                    <input type="color" id="color1" value="#ff6b6b" class="color-picker">
+                </div>
+                <div class="control-group">
+                    <label>Secondary Color</label>
+                    <input type="color" id="color2" value="#4ecdc4" class="color-picker">
+                </div>
+                <div class="control-group">
+                    <label>Line Width <span class="value-display" id="lineWidthValue">2</span></label>
+                    <input type="range" id="lineWidth" min="0.5" max="10" step="0.5" value="2">
+                </div>
+                <div class="control-group">
+                    <label>Opacity <span class="value-display" id="opacityValue">0.8</span></label>
+                    <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Animation</h3>
+                <div class="control-group">
+                    <label>Animation Speed <span class="value-display" id="animSpeedValue">1.0</span></label>
+                    <input type="range" id="animSpeed" min="0" max="3" step="0.1" value="1">
+                </div>
+                <div class="control-group">
+                    <label>Rotation Speed <span class="value-display" id="rotSpeedValue">0.5</span></label>
+                    <input type="range" id="rotSpeed" min="0" max="2" step="0.1" value="0.5">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Presets</h3>
+                <button class="preset-btn" onclick="loadPreset('galaxy')">Spiral Galaxy</button>
+                <button class="preset-btn" onclick="loadPreset('flower')">Flower of Life</button>
+                <button class="preset-btn" onclick="loadPreset('dna')">DNA Helix</button>
+                <button class="preset-btn" onclick="loadPreset('chaos')">Chaos Attractor</button>
+                <button class="preset-btn" onclick="loadPreset('mandala')">Sacred Mandala</button>
+                <button class="preset-btn" onclick="loadPreset('pi_circle')">π Circle Dance</button>
+                <button class="preset-btn" onclick="loadPreset('e_growth')">e Natural Growth</button>
+                <button class="preset-btn" onclick="loadPreset('golden_spiral')">φ Golden Spiral</button>
+                <button class="preset-btn" onclick="loadPreset('prime_ulam')">Prime Ulam Spiral</button>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+            <button class="toggle-btn" id="toggleBtn" onclick="toggleControls()">⚙</button>
+            <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">Fullscreen</button>
+            <div class="keyboard-hint">
+                Press SPACE to hide/show controls • F for fullscreen • ESC to exit fullscreen
+            </div>
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+        let time = 0;
+
+        // Initialize canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Mathematical constants with high precision
+        const CONSTANTS = {
+            PI: '3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679',
+            E: '2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274',
+            PHI: '1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374',
+            TAU: '6.2831853071795864769252867665590057683943387987502116419498891846156328125724179972560696506842341359',
+            SQRT2: '1.4142135623730950488016887242096980785696718753769480731766797379907324784621070388503875343276415727',
+            FIBONACCI: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025],
+            PRIMES: [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541]
+        };
+
+        // Get digit at position for constants
+        function getDigit(constant, position) {
+            const str = CONSTANTS[constant].replace('.', '');
+            return parseInt(str[position % str.length]) || 0;
+        }
+
+        // Generate Fibonacci number at position
+        function fibonacci(n) {
+            if (n < CONSTANTS.FIBONACCI.length) return CONSTANTS.FIBONACCI[n];
+            let a = CONSTANTS.FIBONACCI[CONSTANTS.FIBONACCI.length - 2];
+            let b = CONSTANTS.FIBONACCI[CONSTANTS.FIBONACCI.length - 1];
+            for (let i = CONSTANTS.FIBONACCI.length; i <= n; i++) {
+                [a, b] = [b, a + b];
+            }
+            return b;
+        }
+
+        // Check if number is prime
+        function isPrime(n) {
+            return CONSTANTS.PRIMES.includes(n) || (n > CONSTANTS.PRIMES[CONSTANTS.PRIMES.length - 1] && isPrimeCalc(n));
+        }
+
+        function isPrimeCalc(n) {
+            if (n < 2) return false;
+            for (let i = 2; i <= Math.sqrt(n); i++) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+        const controls = {
+            equationType: document.getElementById('equationType'),
+            freqA: document.getElementById('freqA'),
+            freqB: document.getElementById('freqB'),
+            amplitude: document.getElementById('amplitude'),
+            phase: document.getElementById('phase'),
+            complexity: document.getElementById('complexity'),
+            timeScale: document.getElementById('timeScale'),
+            renderMode: document.getElementById('renderMode'),
+            color1: document.getElementById('color1'),
+            color2: document.getElementById('color2'),
+            lineWidth: document.getElementById('lineWidth'),
+            opacity: document.getElementById('opacity'),
+            animSpeed: document.getElementById('animSpeed'),
+            rotSpeed: document.getElementById('rotSpeed')
+        };
+
+        // Update value displays
+        function updateValueDisplays() {
+            document.getElementById('freqAValue').textContent = controls.freqA.value;
+            document.getElementById('freqBValue').textContent = controls.freqB.value;
+            document.getElementById('amplitudeValue').textContent = controls.amplitude.value;
+            document.getElementById('phaseValue').textContent = controls.phase.value;
+            document.getElementById('complexityValue').textContent = controls.complexity.value;
+            document.getElementById('timeScaleValue').textContent = controls.timeScale.value;
+            document.getElementById('lineWidthValue').textContent = controls.lineWidth.value;
+            document.getElementById('opacityValue').textContent = controls.opacity.value;
+            document.getElementById('animSpeedValue').textContent = controls.animSpeed.value;
+            document.getElementById('rotSpeedValue').textContent = controls.rotSpeed.value;
+        }
+
+        // Update equation display
+        function updateEquationDisplay() {
+            const type = controls.equationType.value;
+            const equations = {
+                parametric: `x = A·sin(at + φ)·cos(bt)\ny = A·sin(at + φ)·sin(bt)`,
+                polar: `r = A·sin(aθ + φ)\nθ = bt`,
+                complex: `z = A·e^(i(at + φ))·sin(bt)`,
+                fractal: `z_{n+1} = z_n² + c\nc = complex parameter`,
+                wave: `f(x,y,t) = A·sin(ax + φ)·cos(by + t)`,
+                lissajous: `x = A·sin(at + φ)\ny = A·sin(bt)`,
+                mandelbrot: `z_{n+1} = z_n² + c\n|z| convergence test`,
+                pi: `π = 3.14159265358979...\nr = A·sin(π·θ/digits)\nCircle circumference visualization`,
+                e: `e = 2.71828182845904...\nf(x) = A·e^(digit_sequence·x)\nNatural growth patterns`,
+                phi: `φ = (1+√5)/2 = 1.618033988...\nGolden spiral: r = A·φ^(θ/π)\nNature's perfect proportion`,
+                tau: `τ = 2π = 6.28318530717958...\nFull circle constant\nr = A·sin(τ·θ/4)`,
+                sqrt2: `√2 = 1.41421356237309...\nDiagonal ratio\nPythagorean constant`,
+                fibonacci: `F(n) = F(n-1) + F(n-2)\nφ^n - (-φ)^(-n) / √5\nGolden spiral approximation`,
+                primes: `2,3,5,7,11,13,17,19,23...\nPrime distribution visualization\nUlam spiral pattern`
+            };
+            document.getElementById('equationDisplay').textContent = equations[type] || '';
+        }
+
+        // Mathematical functions
+        function generatePoints() {
+            const points = [];
+            const type = controls.equationType.value;
+            const steps = parseInt(controls.complexity.value);
+            const A = parseFloat(controls.amplitude.value);
+            const a = parseFloat(controls.freqA.value);
+            const b = parseFloat(controls.freqB.value);
+            const φ = parseFloat(controls.phase.value);
+            const t = time * parseFloat(controls.timeScale.value);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            for (let i = 0; i < steps; i++) {
+                const param = (i / steps) * Math.PI * 2 * Math.max(a, b);
+                let x, y;
+
+                switch (type) {
+                    case 'parametric':
+                        x = cx + A * Math.sin(a * param + φ + t) * Math.cos(b * param);
+                        y = cy + A * Math.sin(a * param + φ + t) * Math.sin(b * param);
+                        break;
+                    case 'polar':
+                        const r = A * Math.sin(a * param + φ + t);
+                        const θ = b * param;
+                        x = cx + r * Math.cos(θ);
+                        y = cy + r * Math.sin(θ);
+                        break;
+                    case 'complex':
+                        const real = A * Math.cos(a * param + φ + t) * Math.sin(b * param);
+                        const imag = A * Math.sin(a * param + φ + t) * Math.cos(b * param);
+                        x = cx + real;
+                        y = cy + imag;
+                        break;
+                    case 'fractal':
+                        const zx = (param - Math.PI) / Math.PI * 2;
+                        const zy = (i / steps - 0.5) * 2;
+                        let iterations = 0;
+                        let zx2 = zx, zy2 = zy;
+                        while (zx2 * zx2 + zy2 * zy2 < 4 && iterations < 50) {
+                            const temp = zx2 * zx2 - zy2 * zy2 + zx + Math.sin(t) * 0.1;
+                            zy2 = 2 * zx2 * zy2 + zy + Math.cos(t) * 0.1;
+                            zx2 = temp;
+                            iterations++;
+                        }
+                        x = cx + (zx * A);
+                        y = cy + (zy * A);
+                        break;
+                    case 'wave':
+                        x = cx + param * 2 - Math.PI * Math.max(a, b);
+                        y = cy + A * Math.sin(a * param + φ + t) * Math.cos(b * param + t);
+                        break;
+                    case 'lissajous':
+                        x = cx + A * Math.sin(a * param + φ + t);
+                        y = cy + A * Math.sin(b * param + t);
+                        break;
+                    case 'mandelbrot':
+                        const scale = 0.005 + Math.sin(t) * 0.002;
+                        const centerX = -0.5 + Math.cos(t * 0.1) * 0.1;
+                        const centerY = Math.sin(t * 0.1) * 0.1;
+                        const px = centerX + (param - Math.PI) * scale;
+                        const py = centerY + ((i / steps) - 0.5) * scale * 2;
+                        let zx3 = 0, zy3 = 0, iter = 0;
+                        while (zx3 * zx3 + zy3 * zy3 < 4 && iter < 100) {
+                            const temp = zx3 * zx3 - zy3 * zy3 + px;
+                            zy3 = 2 * zx3 * zy3 + py;
+                            zx3 = temp;
+                            iter++;
+                        }
+                        x = cx + (px * A * 1000);
+                        y = cy + (py * A * 1000);
+                        break;
+
+                    case 'pi':
+                        // Visualize π digits as spiral with circumference properties
+                        const piDigit = getDigit('PI', Math.floor(param * 10));
+                        const piRadius = A * (0.5 + piDigit / 20) * Math.sin(Math.PI * param + t);
+                        const piAngle = param * Math.PI + piDigit * 0.628; // 0.628 ≈ π/5
+                        x = cx + piRadius * Math.cos(piAngle);
+                        y = cy + piRadius * Math.sin(piAngle);
+                        break;
+
+                    case 'e':
+                        // Euler's number as natural growth spiral
+                        const eDigit = getDigit('E', Math.floor(param * 10));
+                        const eGrowth = A * Math.exp((eDigit - 5) / 10 + Math.sin(t) * 0.1);
+                        const eAngle = param * 2 + eDigit * 0.271; // 0.271 ≈ e/10
+                        x = cx + eGrowth * Math.cos(eAngle) * 0.3;
+                        y = cy + eGrowth * Math.sin(eAngle) * 0.3;
+                        break;
+
+                    case 'phi':
+                        // Golden ratio spiral
+                        const phiDigit = getDigit('PHI', Math.floor(param * 10));
+                        const goldenAngle = param * 2.399; // Golden angle ≈ 2.399 radians
+                        const goldenRadius = A * Math.pow(1.618, (param + phiDigit/10 - 5) * 0.1 + Math.sin(t) * 0.05);
+                        x = cx + goldenRadius * Math.cos(goldenAngle) * 0.1;
+                        y = cy + goldenRadius * Math.sin(goldenAngle) * 0.1;
+                        break;
+
+                    case 'tau':
+                        // Tau (2π) as full circle emphasis
+                        const tauDigit = getDigit('TAU', Math.floor(param * 10));
+                        const tauRadius = A * (0.8 + tauDigit / 15) * Math.cos(param * 2 + t);
+                        const tauAngle = param * 6.283 + tauDigit * 0.628; // Full tau rotation
+                        x = cx + tauRadius * Math.cos(tauAngle);
+                        y = cy + tauRadius * Math.sin(tauAngle);
+                        break;
+
+                    case 'sqrt2':
+                        // √2 as diagonal and Pythagorean visualization
+                        const sqrt2Digit = getDigit('SQRT2', Math.floor(param * 10));
+                        const pythAngle = param * Math.PI * 0.707 + sqrt2Digit * 0.141; // 0.707 ≈ 1/√2
+                        const pythRadius = A * (1 + sqrt2Digit / 10) * Math.sin(param + t);
+                        x = cx + pythRadius * Math.cos(pythAngle) * 1.414;
+                        y = cy + pythRadius * Math.sin(pythAngle);
+                        break;
+
+                    case 'fibonacci':
+                        // Fibonacci spiral using actual sequence
+                        const fibIndex = Math.floor(param * 5) % 25;
+                        const fibNum = fibonacci(fibIndex);
+                        const fibAngle = param * 2.399 + fibIndex * 0.1; // Golden angle
+                        const fibRadius = A * Math.log(fibNum + 1) * 0.1 * (1 + Math.sin(t) * 0.1);
+                        x = cx + fibRadius * Math.cos(fibAngle);
+                        y = cy + fibRadius * Math.sin(fibAngle);
+                        break;
+
+                    case 'primes':
+                        // Prime numbers in Ulam spiral pattern
+                        const primeTest = Math.floor(param * 20) + 2;
+                        const primeRadius = isPrime(primeTest) ? A * 0.8 : A * 0.3;
+                        const primeAngle = param * 6.283 + Math.sqrt(primeTest) * 0.1 + t * 0.1;
+                        const spiral = Math.sqrt(param) * A * 0.1;
+                        x = cx + (primeRadius + spiral) * Math.cos(primeAngle);
+                        y = cy + (primeRadius + spiral) * Math.sin(primeAngle);
+                        break;
+                }
+
+                points.push({ x, y, i });
+            }
+            return points;
+        }
+
+        // Rendering functions
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const points = generatePoints();
+            const mode = controls.renderMode.value;
+            const color1 = controls.color1.value;
+            const color2 = controls.color2.value;
+            const lineWidth = parseFloat(controls.lineWidth.value);
+            const opacity = parseFloat(controls.opacity.value);
+
+            ctx.lineWidth = lineWidth;
+            ctx.globalAlpha = opacity;
+
+            // Apply rotation
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(time * parseFloat(controls.rotSpeed.value) * 0.01);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+            switch (mode) {
+                case 'line':
+                    ctx.strokeStyle = color1;
+                    ctx.beginPath();
+                    points.forEach((point, i) => {
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.stroke();
+                    break;
+
+                case 'dots':
+                    points.forEach((point, i) => {
+                        const hue = (i / points.length) * 360;
+                        ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, lineWidth, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    break;
+
+                case 'glow':
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = color1;
+                    ctx.strokeStyle = color1;
+                    ctx.beginPath();
+                    points.forEach((point, i) => {
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    break;
+
+                case 'rainbow':
+                    for (let i = 1; i < points.length; i++) {
+                        const hue = (i / points.length + time * 0.01) % 1 * 360;
+                        ctx.strokeStyle = `hsl(${hue}, 80%, 60%)`;
+                        ctx.beginPath();
+                        ctx.moveTo(points[i-1].x, points[i-1].y);
+                        ctx.lineTo(points[i].x, points[i].y);
+                        ctx.stroke();
+                    }
+                    break;
+
+                case 'plasma':
+                    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                    gradient.addColorStop(0, color1);
+                    gradient.addColorStop(0.5, color2);
+                    gradient.addColorStop(1, color1);
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = lineWidth * 2;
+                    ctx.beginPath();
+                    points.forEach((point, i) => {
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.stroke();
+                    break;
+
+                case 'wireframe':
+                    ctx.strokeStyle = color2;
+                    for (let i = 0; i < points.length; i += 10) {
+                        const next = points[i + 10] || points[0];
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(next.x, next.y);
+                        ctx.stroke();
+                    }
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        // Animation loop
+        function animate() {
+            render();
+            time += parseFloat(controls.animSpeed.value);
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Preset configurations
+        function loadPreset(preset) {
+            const presets = {
+                galaxy: {
+                    equationType: 'polar',
+                    freqA: 3,
+                    freqB: 1,
+                    amplitude: 150,
+                    phase: 0,
+                    complexity: 2000,
+                    renderMode: 'glow',
+                    color1: '#4a90e2',
+                    color2: '#7b68ee'
+                },
+                flower: {
+                    equationType: 'parametric',
+                    freqA: 5,
+                    freqB: 3,
+                    amplitude: 120,
+                    phase: 1.57,
+                    complexity: 1500,
+                    renderMode: 'rainbow',
+                    color1: '#ff69b4',
+                    color2: '#32cd32'
+                },
+                dna: {
+                    equationType: 'lissajous',
+                    freqA: 1,
+                    freqB: 2,
+                    amplitude: 100,
+                    phase: 1.57,
+                    complexity: 1000,
+                    renderMode: 'line',
+                    color1: '#00ff00',
+                    color2: '#ff0000'
+                },
+                chaos: {
+                    equationType: 'fractal',
+                    freqA: 2.5,
+                    freqB: 1.8,
+                    amplitude: 200,
+                    phase: 0,
+                    complexity: 3000,
+                    renderMode: 'dots',
+                    color1: '#ff4500',
+                    color2: '#8a2be2'
+                },
+                mandala: {
+                    equationType: 'complex',
+                    freqA: 6,
+                    freqB: 4,
+                    amplitude: 130,
+                    phase: 0,
+                    complexity: 2500,
+                    renderMode: 'plasma',
+                    color1: '#ffd700',
+                    color2: '#ff1493'
+                },
+                pi_circle: {
+                    equationType: 'pi',
+                    freqA: 3.14159,
+                    freqB: 1,
+                    amplitude: 120,
+                    phase: 0,
+                    complexity: 3141,
+                    renderMode: 'rainbow',
+                    color1: '#ff6b6b',
+                    color2: '#4ecdc4'
+                },
+                e_growth: {
+                    equationType: 'e',
+                    freqA: 2.718,
+                    freqB: 1,
+                    amplitude: 100,
+                    phase: 0,
+                    complexity: 2718,
+                    renderMode: 'glow',
+                    color1: '#32cd32',
+                    color2: '#98fb98'
+                },
+                golden_spiral: {
+                    equationType: 'phi',
+                    freqA: 1.618,
+                    freqB: 1,
+                    amplitude: 150,
+                    phase: 0,
+                    complexity: 1618,
+                    renderMode: 'line',
+                    color1: '#ffd700',
+                    color2: '#ffb347'
+                },
+                prime_ulam: {
+                    equationType: 'primes',
+                    freqA: 2,
+                    freqB: 3,
+                    amplitude: 100,
+                    phase: 0,
+                    complexity: 2000,
+                    renderMode: 'dots',
+                    color1: '#8a2be2',
+                    color2: '#da70d6'
+                }
+            };
+
+            const config = presets[preset];
+            if (config) {
+                Object.keys(config).forEach(key => {
+                    if (controls[key]) {
+                        controls[key].value = config[key];
+                    }
+                });
+                updateValueDisplays();
+                updateEquationDisplay();
+            }
+        }
+
+        // Event listeners
+        Object.values(controls).forEach(control => {
+            control.addEventListener('input', updateValueDisplays);
+            control.addEventListener('change', updateEquationDisplay);
+        });
+
+        // Initialize
+        updateValueDisplays();
+        updateEquationDisplay();
+        animate();
+
+        // UI Controls
+        function toggleControls() {
+            const controls = document.querySelector('.controls');
+            const container = document.getElementById('canvasContainer');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            controls.classList.toggle('hidden');
+            container.classList.toggle('full-width');
+            toggleBtn.textContent = controls.classList.contains('hidden') ? '⚙' : '✕';
+            
+            // Resize canvas after transition
+            setTimeout(resizeCanvas, 400);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('Fullscreen not supported');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleControls();
+            } else if (e.code === 'KeyF') {
+                e.preventDefault();
+                toggleFullscreen();
+            } else if (e.code === 'Escape' && document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        });
+
+        // Update fullscreen button text
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('fullscreenBtn');
+            btn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+            setTimeout(resizeCanvas, 100);
+        });
+    </script>
+</body>
+</html>

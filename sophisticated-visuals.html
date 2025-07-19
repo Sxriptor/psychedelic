@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sophisticated Visual Art Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #111;
+            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .controls {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 300px;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .controls.hidden {
+            transform: translateX(320px);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        .slider-container label {
+            display: block;
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #0af;
+        }
+
+        .color-picker {
+            width: 100%;
+            margin-bottom: 10px;
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .toggle-controls {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 101;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .status {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #aaa;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <button class="toggle-controls">≡</button>
+    <div class="controls">
+        <div class="control-group">
+            <h3>Colors</h3>
+            <input type="color" class="color-picker" id="primaryColor" value="#00ff8c">
+            <input type="color" class="color-picker" id="secondaryColor" value="#0076ff">
+            <input type="color" class="color-picker" id="accentColor" value="#ff0055">
+        </div>
+        <div class="control-group">
+            <h3>Parameters</h3>
+            <div class="slider-container">
+                <label>Flow Speed</label>
+                <input type="range" class="slider" id="flowSpeed" min="0" max="100" value="50">
+            </div>
+            <div class="slider-container">
+                <label>Complexity</label>
+                <input type="range" class="slider" id="complexity" min="0" max="100" value="60">
+            </div>
+            <div class="slider-container">
+                <label>Scale</label>
+                <input type="range" class="slider" id="scale" min="10" max="200" value="100">
+            </div>            <div class="slider-container">
+                <label>Glow Intensity</label>
+                <input type="range" class="slider" id="glow" min="0" max="100" value="50">
+            </div>
+            <div class="slider-container">
+                <label>Fractal Depth</label>
+                <input type="range" class="slider" id="fractalDepth" min="0" max="100" value="50">
+            </div>
+            <div class="performance-controls">
+                <label style="display: flex; align-items: center; margin: 10px 0;">
+                    <input type="checkbox" id="performanceMode" checked>
+                    <span style="margin-left: 8px">Performance Mode</span>
+                </label>
+                <select id="fractalType" style="width: 100%; padding: 5px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;">
+                    <option value="mandelbrot">Mandelbrot</option>
+                    <option value="none">No Fractals</option>
+                </select>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>Presets</h3>
+            <div class="presets">
+                <button class="preset-btn" data-preset="elegant">Elegant</button>
+                <button class="preset-btn" data-preset="ethereal">Ethereal</button>
+                <button class="preset-btn" data-preset="minimalist">Minimalist</button>
+                <button class="preset-btn" data-preset="intense">Intense</button>
+            </div>
+        </div>
+    </div>
+    <div class="status">Press 'S' to save | 'H' to hide controls | Mouse interaction enabled</div>
+
+    <script>
+        class SophisticatedVisuals {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.flowField = [];
+                this.mousePos = { x: 0, y: 0 };
+                this.isMouseDown = false;
+                this.time = 0;
+                this.frameCount = 0;
+                
+                this.settings = {
+                    primaryColor: '#00ff8c',
+                    secondaryColor: '#0076ff',
+                    accentColor: '#ff0055',
+                    flowSpeed: 0.5,
+                    complexity: 0.6,
+                    scale: 1,                    glow: 0.5,
+                    fractalDepth: 0.5,
+                    fractalType: 'mandelbrot',
+                    performanceMode: true
+                };
+
+                this.setupCanvas();
+                this.initFlowField();
+                this.initParticles();
+                this.setupEventListeners();
+                this.lastRenderTime = 0;
+                this.animate();
+            }
+
+            setupCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+            }
+
+            initFlowField() {
+                const cols = Math.floor(this.canvas.width / 20);
+                const rows = Math.floor(this.canvas.height / 20);
+                
+                this.flowField = new Array(cols * rows);
+                for (let y = 0; y < rows; y++) {
+                    for (let x = 0; x < cols; x++) {
+                        const index = x + y * cols;
+                        const angle = noise.simplex3(x * 0.1, y * 0.1, this.time * 0.001) * Math.PI * 2;
+                        this.flowField[index] = angle;
+                    }
+                }
+            }            initParticles() {
+                this.particles = [];
+                // Reduced number of particles for better performance
+                const numParticles = Math.floor((this.canvas.width * this.canvas.height) / 20000);
+                const maxParticles = Math.min(numParticles, 500); // Cap maximum particles
+                
+                for (let i = 0; i < maxParticles; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: 0,
+                        vy: 0,
+                        history: [],
+                        life: Math.random() * 0.5 + 0.5
+                    });
+                }
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => this.setupCanvas());
+                
+                this.canvas.addEventListener('mousemove', (e) => {
+                    this.mousePos.x = e.clientX;
+                    this.mousePos.y = e.clientY;
+                });
+                
+                this.canvas.addEventListener('mousedown', () => this.isMouseDown = true);
+                this.canvas.addEventListener('mouseup', () => this.isMouseDown = false);
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 's' || e.key === 'S') {
+                        this.saveCanvas();
+                    } else if (e.key === 'h' || e.key === 'H') {
+                        document.querySelector('.controls').classList.toggle('hidden');
+                    }
+                });
+
+                document.querySelector('.toggle-controls').addEventListener('click', () => {
+                    document.querySelector('.controls').classList.toggle('hidden');
+                });
+
+                // Setup control listeners
+                ['primaryColor', 'secondaryColor', 'accentColor'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        this.settings[id] = e.target.value;
+                    });
+                });                ['flowSpeed', 'complexity', 'scale', 'glow', 'fractalDepth'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        this.settings[id] = e.target.value / 100;
+                    });
+                });
+
+                // Performance controls
+                document.getElementById('performanceMode').addEventListener('change', (e) => {
+                    this.settings.performanceMode = e.target.checked;
+                });
+
+                document.getElementById('fractalType').addEventListener('change', (e) => {
+                    this.settings.fractalType = e.target.value;
+                });
+
+                // Setup preset listeners
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.applyPreset(btn.dataset.preset));
+                });
+            }
+
+            applyPreset(preset) {
+                const presets = {
+                    elegant: {
+                        primaryColor: '#e0e0e0',
+                        secondaryColor: '#a0a0a0',
+                        accentColor: '#404040',
+                        flowSpeed: 0.3,
+                        complexity: 0.4,
+                        scale: 0.8,
+                        glow: 0.3
+                    },
+                    ethereal: {
+                        primaryColor: '#00ff8c',
+                        secondaryColor: '#0076ff',
+                        accentColor: '#ff0055',
+                        flowSpeed: 0.5,
+                        complexity: 0.6,
+                        scale: 1,
+                        glow: 0.7
+                    },
+                    minimalist: {
+                        primaryColor: '#ffffff',
+                        secondaryColor: '#cccccc',
+                        accentColor: '#888888',
+                        flowSpeed: 0.2,
+                        complexity: 0.3,
+                        scale: 0.6,
+                        glow: 0.2
+                    },
+                    intense: {
+                        primaryColor: '#ff0055',
+                        secondaryColor: '#00ff8c',
+                        accentColor: '#0076ff',
+                        flowSpeed: 0.8,
+                        complexity: 0.9,
+                        scale: 1.2,
+                        glow: 0.9
+                    }
+                };
+
+                const settings = presets[preset];
+                if (!settings) return;
+
+                Object.entries(settings).forEach(([key, value]) => {
+                    this.settings[key] = value;
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'color') {
+                            element.value = value;
+                        } else {
+                            element.value = value * 100;
+                        }
+                    }
+                });
+            }
+
+            updateParticles() {
+                const cols = Math.floor(this.canvas.width / 20);
+                
+                this.particles.forEach(p => {
+                    // Get flow field influence
+                    const x = Math.floor(p.x / 20);
+                    const y = Math.floor(p.y / 20);
+                    const index = x + y * cols;
+                    const angle = this.flowField[index] || 0;
+                    
+                    // Update velocity based on flow field
+                    const force = this.settings.flowSpeed * 2;
+                    p.vx += Math.cos(angle) * force;
+                    p.vy += Math.sin(angle) * force;
+                    
+                    // Apply mouse influence if nearby
+                    if (this.isMouseDown) {
+                        const dx = this.mousePos.x - p.x;
+                        const dy = this.mousePos.y - p.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 200) {
+                            const force = (1 - dist / 200) * 0.2;
+                            p.vx += dx * force;
+                            p.vy += dy * force;
+                        }
+                    }
+                    
+                    // Apply velocity with drag
+                    p.vx *= 0.95;
+                    p.vy *= 0.95;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    // Update particle history
+                    p.history.push({ x: p.x, y: p.y });
+                    if (p.history.length > 20) {
+                        p.history.shift();
+                    }
+                    
+                    // Handle boundaries
+                    if (p.x < 0) p.x = this.canvas.width;
+                    if (p.x > this.canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = this.canvas.height;
+                    if (p.y > this.canvas.height) p.y = 0;
+                    
+                    // Update life
+                    p.life -= 0.001;
+                    if (p.life <= 0) {
+                        p.life = 1;
+                        p.x = Math.random() * this.canvas.width;
+                        p.y = Math.random() * this.canvas.height;
+                        p.history = [];
+                    }
+                });
+            }
+
+            drawMandelbrot(x0, y0, zoom) {
+                const maxIter = Math.floor(this.settings.fractalDepth * 100) + 50;
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                
+                // Use an off-screen canvas for better performance
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = width / 2; // Reduced resolution for performance
+                offCanvas.height = height / 2;
+                const offCtx = offCanvas.getContext('2d');
+                const imgData = offCtx.createImageData(offCanvas.width, offCanvas.height);
+                const data = imgData.data;
+
+                for (let x = 0; x < offCanvas.width; x++) {
+                    for (let y = 0; y < offCanvas.height; y++) {
+                        let a = (x / offCanvas.width) * 4 - 2;
+                        let b = (y / offCanvas.height) * 4 - 2;
+                        a = a / zoom + x0;
+                        b = b / zoom + y0;
+                        
+                        const [iteration, smooth] = this.mandelbrotIteration(a, b, maxIter);
+                        const color = this.getFractalColor(iteration, smooth, maxIter);
+                        
+                        const pos = (x + y * offCanvas.width) * 4;
+                        data[pos] = color.r;
+                        data[pos + 1] = color.g;
+                        data[pos + 2] = color.b;
+                        data[pos + 3] = 255;
+                    }
+                }
+
+                offCtx.putImageData(imgData, 0, 0);
+                this.ctx.drawImage(offCanvas, 0, 0, width, height);
+            }
+
+            mandelbrotIteration(x0, y0, maxIter) {
+                let x = 0, y = 0;
+                let iter = 0;
+                
+                while (x*x + y*y <= 4 && iter < maxIter) {
+                    const xtemp = x*x - y*y + x0;
+                    y = 2*x*y + y0;
+                    x = xtemp;
+                    iter++;
+                }
+                
+                const smooth = iter + 1 - Math.log(Math.log(Math.sqrt(x*x + y*y))) / Math.log(2);
+                return [iter, smooth];
+            }
+
+            getFractalColor(iteration, smooth, maxIter) {
+                if (iteration >= maxIter) return { r: 0, g: 0, b: 0 };
+                
+                const hue = (smooth * 10) % 360;
+                const saturation = 0.8;
+                const value = iteration < maxIter ? 1 : 0;
+                
+                const rgb = this.hsvToRgb(hue, saturation, value);
+                return {
+                    r: Math.floor(rgb.r * 255),
+                    g: Math.floor(rgb.g * 255),
+                    b: Math.floor(rgb.b * 255)
+                };
+            }
+
+            hsvToRgb(h, s, v) {
+                const c = v * s;
+                const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+                const m = v - c;
+                
+                let r, g, b;
+                if (h < 60) { r = c; g = x; b = 0; }
+                else if (h < 120) { r = x; g = c; b = 0; }
+                else if (h < 180) { r = 0; g = c; b = x; }
+                else if (h < 240) { r = 0; g = x; b = c; }
+                else if (h < 300) { r = x; g = 0; b = c; }
+                else { r = c; g = 0; b = x; }
+                
+                return {
+                    r: r + m,
+                    g: g + m,
+                    b: b + m
+                };
+            }
+
+            render() {
+                const currentTime = performance.now();
+                const deltaTime = currentTime - this.lastRenderTime;
+                
+                // Skip frames if performance mode is on and we're running too fast
+                if (this.settings.performanceMode && deltaTime < 16.67) { // Target 60fps
+                    requestAnimationFrame(() => this.animate());
+                    return;
+                }
+                
+                this.lastRenderTime = currentTime;
+                
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw fractal
+                if (this.settings.fractalType === 'mandelbrot') {
+                    const zoom = Math.exp(this.time * 0.001) % 10 + 1;
+                    this.drawMandelbrot(-0.5, 0, zoom);
+                }
+                
+                // Set composite operation for glow effect
+                this.ctx.globalCompositeOperation = 'lighter';
+                
+                // Draw particles with reduced opacity for better blending with fractals
+                this.particles.forEach(p => {
+                    if (p.history.length < 2) return;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(p.history[0].x, p.history[0].y);
+                    
+                    for (let i = 1; i < p.history.length; i++) {
+                        const point = p.history[i];
+                        const prevPoint = p.history[i - 1];
+                        const t = i / p.history.length;
+                        
+                        const gradient = this.ctx.createLinearGradient(
+                            prevPoint.x, prevPoint.y,
+                            point.x, point.y
+                        );
+                        
+                        const color1 = this.settings.primaryColor + '80'; // Added transparency
+                        const color2 = this.settings.secondaryColor + '80';
+                        
+                        gradient.addColorStop(0, color1);
+                        gradient.addColorStop(1, color2);
+                        
+                        this.ctx.strokeStyle = gradient;
+                        this.ctx.lineWidth = p.life * 2 * this.settings.scale; // Reduced line width
+                        this.ctx.lineTo(point.x, point.y);
+                    }
+                    
+                    this.ctx.shadowBlur = 10 * this.settings.glow; // Reduced shadow blur
+                    this.ctx.shadowColor = this.settings.primaryColor;
+                    this.ctx.stroke();
+                });
+                
+                this.ctx.globalCompositeOperation = 'source-over';
+            }
+
+            interpolateColors(color1, color2, t) {
+                const c1 = this.hexToRgb(color1);
+                const c2 = this.hexToRgb(color2);
+                
+                const r = Math.floor(c1.r + (c2.r - c1.r) * t);
+                const g = Math.floor(c1.g + (c2.g - c1.g) * t);
+                const b = Math.floor(c1.b + (c2.b - c1.b) * t);
+                
+                return `rgb(${r},${g},${b})`;
+            }
+
+            hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : { r: 0, g: 0, b: 0 };
+            }
+
+            animate() {
+                this.time++;
+                this.frameCount++;
+                
+                if (this.frameCount % 60 === 0) {
+                    this.initFlowField();
+                }
+                
+                this.updateParticles();
+                this.render();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            saveCanvas() {
+                const link = document.createElement('a');
+                link.download = `sophisticated-art-${Date.now()}.png`;
+                link.href = this.canvas.toDataURL();
+                link.click();
+            }
+        }
+
+        // Simplex Noise implementation
+        const noise = {};
+        
+        (function(noise) {
+            // ... Simplex noise implementation (skipped for brevity)
+            // This is a placeholder. You would include the actual simplex noise implementation here
+            noise.seed = function(seed) {
+                // Implement noise seeding
+            };
+            
+            noise.simplex2 = function(x, y) {
+                // Implement 2D simplex noise
+                return Math.sin(x * 0.1 + y * 0.1);
+            };
+            
+            noise.simplex3 = function(x, y, z) {
+                // Implement 3D simplex noise
+                return Math.sin(x * 0.1 + y * 0.1 + z * 0.1);
+            };
+        })(noise);
+
+        // Initialize the application
+        window.addEventListener('load', () => {
+            new SophisticatedVisuals();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 AUDIO REACTIVE TRIP 🎵</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            color: #fff;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ff00ff;
+            border-radius: 15px;
+            padding: 20px;
+            z-index: 10;
+            max-width: 380px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
+        }
+        
+        .control-group {
+            margin: 20px 0;
+            border: 1px solid #00ffff;
+            padding: 15px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1));
+            transition: all 0.3s ease;
+        }
+        
+        .control-group:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .control-group h3 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px #00ffff;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-shadow: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        button:hover:before {
+            left: 100%;
+        }
+        
+        button:hover {
+            transform: scale(1.05) rotate(1deg);
+            box-shadow: 0 5px 20px rgba(255, 0, 255, 0.5);
+        }
+        
+        button.active {
+            background: linear-gradient(45deg, #ffff00, #ff0000);
+            box-shadow: 0 0 20px #ffff00;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* Custom Slider Styles */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            outline: none;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ffff00, #ff0000);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+            transition: all 0.2s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(255, 255, 0, 1);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ffff00, #ff0000);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            margin: 5px 0;
+            background: rgba(255, 0, 255, 0.2);
+            border: 2px solid #ff00ff;
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        input[type="file"]:hover {
+            background: rgba(255, 0, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+        
+        label {
+            color: #ffff00;
+            display: block;
+            margin: 8px 0;
+            text-shadow: 0 0 8px #ffff00;
+            font-size: 14px;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .performance-indicators {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        #fps, #audioStatus {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #00ff00;
+            z-index: 10;
+            font-size: 18px;
+            text-shadow: 0 0 15px #00ff00;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #00ff00;
+        }
+        
+        #audioStatus {
+            top: 70px;
+        }
+        
+        .audio-controls {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        audio {
+            width: 100%;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        
+        .visualizer {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 350px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 400px;
+            background: linear-gradient(45deg, #ff0000, #ff8800);
+            color: #fff;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.5);
+        }
+        
+        .beat-detector {
+            position: fixed;
+            top: 120px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            border: 3px solid #ff00ff;
+            border-radius: 50%;
+            background: rgba(255, 0, 255, 0.1);
+            z-index: 10;
+            transition: all 0.1s;
+        }
+        
+        .beat-detector.beat {
+            background: rgba(255, 0, 255, 0.8);
+            transform: scale(1.3);
+            box-shadow: 0 0 30px #ff00ff;
+        }
+        
+        .auto-mode {
+            position: fixed;
+            bottom: 160px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        .performance-mode {
+            background: linear-gradient(45deg, #ff8800, #ffff00);
+            color: #000;
+            font-size: 12px;
+        }
+        
+        .quality-mode {
+            background: linear-gradient(45deg, #0088ff, #00ffff);
+            color: #000;
+            font-size: 12px;
+        }
+        
+        /* Scrollbar styling */
+        .controls::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .controls::-webkit-scrollbar-track {
+            background: rgba(255, 0, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .controls::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            border-radius: 10px;
+        }
+        
+        .controls::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #ffff00, #ff0000);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="fps">FPS: 0</div>
+    <div id="audioStatus">🎵 NO AUDIO</div>
+    <div class="beat-detector" id="beatDetector"></div>
+    
+    <button class="back-btn" onclick="window.location.href='wow.html'">← BACK TO MAIN</button>
+    
+    <div class="auto-mode" id="autoMode" style="display: none;">
+        🤖 AUTO MODE<br>
+        Mode: <span id="currentAutoMode">Spectrum</span><br>
+        Next: <span id="nextModeTime">15s</span>
+    </div>
+    
+    <div class="controls">
+        <h2 style="text-align: center; color: #ff00ff; text-shadow: 0 0 25px #ff00ff; margin-bottom: 20px;">🎵 AUDIO REACTIVE TRIP 🎵</h2>
+        
+        <div class="control-group">
+            <h3>🎼 Audio Source</h3>
+            <div class="audio-controls">
+                <input type="file" id="audioFile" accept="audio/*">
+                <audio id="audioPlayer" controls style="width: 100%;"></audio>
+                <button onclick="toggleMicrophone()" id="mic-btn">🎤 Use Microphone</button>
+                <button onclick="toggleAutoMode()" id="auto-btn">🤖 Auto Mode</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>⚡ Performance</h3>
+            <button onclick="setPerformanceMode('performance')" id="perf-btn" class="performance-mode">🚀 Performance</button>
+            <button onclick="setPerformanceMode('quality')" id="qual-btn" class="quality-mode">💎 Quality</button>
+            <label>Particle Limit: <span id="particleLimit-val">300</span></label>
+            <input type="range" id="particleLimit" min="50" max="1000" step="10" value="300">
+        </div>
+        
+        <div class="control-group">
+            <h3>🌈 Visual Modes</h3>
+            <div class="preset-buttons">
+                <button onclick="setMode('spectrum')" id="spectrum-btn">Spectrum</button>
+                <button onclick="setMode('waveform')" id="waveform-btn">Waveform</button>
+                <button onclick="setMode('particles')" id="particles-btn">Particles</button>
+                <button onclick="setMode('kaleidoscope')" id="kaleidoscope-btn">Kaleidoscope</button>
+                <button onclick="setMode('tunnel')" id="tunnel-btn">Tunnel</button>
+                <button onclick="setMode('fractal')" id="fractal-btn">Fractals</button>
+                <button onclick="setMode('plasma')" id="plasma-btn">Plasma</button>
+                <button onclick="setMode('mandala')" id="mandala-btn">Mandala</button>
+                <button onclick="setMode('matrix')" id="matrix-btn">Matrix</button>
+                <button onclick="setMode('spiral')" id="spiral-btn">Spiral</button>
+                <button onclick="setMode('galaxy')" id="galaxy-btn">Galaxy</button>
+                <button onclick="setMode('dna')" id="dna-btn">DNA</button>
+                <button onclick="setMode('neural')" id="neural-btn">Neural</button>
+                <button onclick="setMode('flower')" id="flower-btn">Flower</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>🎚️ Audio Analysis</h3>
+            <label>Bass Boost: <span id="bassBoost-val">100</span>%</label>
+            <input type="range" id="bassBoost" min="0" max="300" step="1" value="100">
+            
+            <label>Mid Boost: <span id="midBoost-val">100</span>%</label>
+            <input type="range" id="midBoost" min="0" max="300" step="1" value="100">
+            
+            <label>Treble Boost: <span id="trebleBoost-val">100</span>%</label>
+            <input type="range" id="trebleBoost" min="0" max="300" step="1" value="100">
+            
+            <label>Reactivity: <span id="reactivity-val">150</span>%</label>
+            <input type="range" id="reactivity" min="50" max="500" step="1" value="150">
+            
+            <label>Beat Sensitivity: <span id="beatSens-val">70</span>%</label>
+            <input type="range" id="beatSens" min="10" max="100" step="1" value="70">
+        </div>
+        
+        <div class="control-group">
+            <h3>✨ Visual Effects</h3>
+            <label>Speed: <span id="speed-val">1</span></label>
+            <input type="range" id="speed" min="0.1" max="10" step="0.1" value="1">
+            
+            <label>Scale: <span id="scale-val">1</span></label>
+            <input type="range" id="scale" min="0.1" max="5" step="0.1" value="1">
+            
+            <label>Color Shift: <span id="colorShift-val">50</span></label>
+            <input type="range" id="colorShift" min="0" max="200" step="1" value="50">
+            
+            <label>Intensity: <span id="intensity-val">100</span>%</label>
+            <input type="range" id="intensity" min="10" max="300" step="1" value="100">
+            
+            <label>Glow: <span id="glow-val">50</span>%</label>
+            <input type="range" id="glow" min="0" max="100" step="1" value="50">
+        </div>
+        
+        <div class="control-group">
+            <h3>🎭 Smart Presets</h3>
+            <div class="preset-buttons">
+                <button onclick="loadPreset('bass')">🔊 BASS HEAVY</button>
+                <button onclick="loadPreset('electronic')">⚡ ELECTRONIC</button>
+                <button onclick="loadPreset('ambient')">🌌 AMBIENT</button>
+                <button onclick="loadPreset('rock')">🎸 ROCK</button>
+                <button onclick="loadPreset('psychedelic')">🌀 PSYCHEDELIC</button>
+                <button onclick="loadPreset('chill')">😌 CHILL</button>
+                <button onclick="loadPreset('intense')">🔥 INTENSE</button>
+                <button onclick="loadPreset('dreamy')">💭 DREAMY</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>🎮 Controls</h3>
+            <button onclick="toggleFullscreen()" style="width: 100%; background: linear-gradient(45deg, #ff0000, #ffff00); margin-bottom: 10px;">🔥 FULLSCREEN 🔥</button>
+            <button onclick="saveScreenshot()" style="width: 100%; background: linear-gradient(45deg, #00ff00, #0088ff); margin-bottom: 10px;">📸 SCREENSHOT</button>
+            <button onclick="resetSettings()" style="width: 100%; background: linear-gradient(45deg, #ff8800, #ff0088);">🔄 RESET</button>
+        </div>
+    </div>
+    
+    <canvas id="visualizer" class="visualizer"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const vizCanvas = document.getElementById('visualizer');
+        const vizCtx = vizCanvas.getContext('2d');
+        
+        let animationId;
+        let audioContext, analyser, source, dataArray, bufferLength;
+        let isPlaying = false;
+        let isMicActive = false;
+        let performanceMode = 'quality'; // 'performance' or 'quality'
+        
+        // Performance tracking
+        let frameCount = 0;
+        let lastFrameTime = 0;
+        let avgFrameTime = 16.67; // Target 60fps
+        
+        // Beat detection
+        let beatHistory = [];
+        let lastBeat = 0;
+        let beatThreshold = 0.7;
+        
+        // Auto mode
+        let autoModeActive = false;
+        let autoModeTimer = 0;
+        let autoModeDuration = 15000; // 15 seconds
+        const visualModes = ['spectrum', 'waveform', 'particles', 'kaleidoscope', 'tunnel', 'fractal', 'plasma', 'mandala', 'matrix', 'spiral', 'galaxy', 'dna', 'neural', 'flower'];
+        let currentAutoModeIndex = 0;
+        
+        // State with performance optimizations
+        let state = {
+            mode: 'spectrum',
+            time: 0,
+            speed: 1,
+            scale: 1,
+            colorShift: 50,
+            intensity: 100,
+            glow: 50,
+            bassBoost: 100,
+            midBoost: 100,
+            trebleBoost: 100,
+            reactivity: 150,
+            beatSens: 70,
+            particleLimit: 300,
+            particles: [],
+            audioData: {
+                bass: 0,
+                mid: 0,
+                treble: 0,
+                overall: 0,
+                frequencies: null,
+                beat: false,
+                energy: 0
+            },
+            // Performance buffers
+            frameBuffer: null,
+            skipFrames: 0
+        };
+        
+        // Canvas setup with performance optimization
+        function resizeCanvas() {
+            const pixelRatio = window.devicePixelRatio || 1;
+            const targetPixelRatio = performanceMode === 'performance' ? Math.min(pixelRatio, 1.5) : pixelRatio;
+            
+            canvas.width = window.innerWidth * targetPixelRatio;
+            canvas.height = window.innerHeight * targetPixelRatio;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            
+            ctx.scale(targetPixelRatio, targetPixelRatio);
+            
+            vizCanvas.width = 350;
+            vizCanvas.height = 120;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Audio setup with enhanced analysis
+        async function initAudioContext() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = performanceMode === 'performance' ? 256 : 512;
+            analyser.smoothingTimeConstant = 0.8;
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+        }
+        
+        // Enhanced file audio setup
+        document.getElementById('audioFile').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.src = URL.createObjectURL(file);
+                
+                if (!audioContext) await initAudioContext();
+                
+                if (source) source.disconnect();
+                source = audioContext.createMediaElementSource(audioPlayer);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                audioPlayer.play();
+                isPlaying = true;
+                document.getElementById('audioStatus').textContent = '🎵 PLAYING: ' + file.name.slice(0, 25);
+            }
+        });
+        
+        // Enhanced microphone setup
+        async function toggleMicrophone() {
+            if (isMicActive) {
+                if (source) source.disconnect();
+                isMicActive = false;
+                isPlaying = false;
+                document.getElementById('mic-btn').textContent = '🎤 Use Microphone';
+                document.getElementById('audioStatus').textContent = '🎵 NO AUDIO';
+                return;
+            }
+            
+            try {
+                if (!audioContext) await initAudioContext();
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false 
+                    } 
+                });
+                if (source) source.disconnect();
+                source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                
+                isMicActive = true;
+                isPlaying = true;
+                document.getElementById('mic-btn').textContent = '🔇 Stop Microphone';
+                document.getElementById('mic-btn').classList.add('active');
+                document.getElementById('audioStatus').textContent = '🎤 MICROPHONE ACTIVE';
+            } catch (e) {
+                alert('Microphone access denied!');
+            }
+        }
+        
+        // Advanced audio analysis with beat detection
+        function analyzeAudio() {
+            if (!analyser || !isPlaying) return;
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Calculate enhanced frequency bands
+            const bassEnd = Math.floor(bufferLength * 0.15);
+            const midEnd = Math.floor(bufferLength * 0.6);
+            
+            let bass = 0, mid = 0, treble = 0, overall = 0, energy = 0;
+            
+            // Calculate averages with weighting
+            for (let i = 0; i < bassEnd; i++) {
+                bass += dataArray[i] * (i + 1); // Weight higher frequencies more
+            }
+            for (let i = bassEnd; i < midEnd; i++) {
+                mid += dataArray[i];
+            }
+            for (let i = midEnd; i < bufferLength; i++) {
+                treble += dataArray[i];
+            }
+            for (let i = 0; i < bufferLength; i++) {
+                overall += dataArray[i];
+                energy += dataArray[i] * dataArray[i]; // Energy calculation
+            }
+            
+            bass = (bass / (bassEnd * bassEnd) / 255) * (state.bassBoost / 100);
+            mid = (mid / (midEnd - bassEnd) / 255) * (state.midBoost / 100);
+            treble = (treble / (bufferLength - midEnd) / 255) * (state.trebleBoost / 100);
+            overall = (overall / bufferLength / 255) * (state.reactivity / 100);
+            energy = Math.sqrt(energy / bufferLength) / 255;
+            
+            // Beat detection algorithm
+            beatHistory.push(energy);
+            if (beatHistory.length > 20) beatHistory.shift();
+            
+            const avgEnergy = beatHistory.reduce((a, b) => a + b, 0) / beatHistory.length;
+            const variance = beatHistory.reduce((sum, val) => sum + Math.pow(val - avgEnergy, 2), 0) / beatHistory.length;
+            const threshold = avgEnergy + Math.sqrt(variance) * (state.beatSens / 100);
+            
+            const beat = energy > threshold && (Date.now() - lastBeat) > 100;
+            if (beat) {
+                lastBeat = Date.now();
+                document.getElementById('beatDetector').classList.add('beat');
+                setTimeout(() => {
+                    document.getElementById('beatDetector').classList.remove('beat');
+                }, 100);
+            }
+            
+            state.audioData = { bass, mid, treble, overall, frequencies: dataArray, beat, energy };
+        }
+        
+        // Enhanced particle class with performance optimization
+        class AudioParticle {
+            constructor(x, y, type = 'default') {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                this.life = 1;
+                this.decay = Math.random() * 0.03 + 0.005;
+                this.size = Math.random() * 25 + 5;
+                this.hue = Math.random() * 360;
+                this.angle = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.3;
+                this.type = type;
+                this.trail = [];
+            }
+            
+            update() {
+                const audioBoost = state.audioData.overall * 3;
+                const beatBoost = state.audioData.beat ? 2 : 1;
+                
+                this.angle += this.spin * state.speed;
+                this.x += this.vx * state.speed * (1 + audioBoost) * beatBoost;
+                this.y += this.vy * state.speed * (1 + audioBoost) * beatBoost;
+                this.life -= this.decay;
+                this.hue += state.colorShift / 10;
+                
+                // Store trail
+                if (performanceMode === 'quality') {
+                    this.trail.push({x: this.x, y: this.y, life: this.life});
+                    if (this.trail.length > 10) this.trail.shift();
+                }
+                
+                // Wrap around screen
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+                
+                return this.life > 0;
+            }
+            
+            draw() {
+                const intensityMod = state.intensity / 100;
+                const glowMod = state.glow / 100;
+                
+                ctx.save();
+                ctx.globalAlpha = this.life * intensityMod;
+                
+                // Draw trail in quality mode
+                if (performanceMode === 'quality' && this.trail.length > 1) {
+                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 60%, ${this.life * 0.3})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const point = this.trail[i];
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    }
+                    ctx.stroke();
+                }
+                
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                const audioSize = this.size * state.scale * (1 + state.audioData.bass * 2);
+                
+                // Enhanced particle rendering
+                if (glowMod > 0) {
+                    ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+                    ctx.shadowBlur = audioSize * glowMod;
+                }
+                
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, audioSize);
+                gradient.addColorStop(0, `hsla(${this.hue}, 100%, 80%, 1)`);
+                gradient.addColorStop(0.7, `hsla(${this.hue}, 100%, 50%, 0.8)`);
+                gradient.addColorStop(1, `hsla(${this.hue}, 100%, 30%, 0)`);
+                
+                ctx.fillStyle = gradient;
+                
+                switch(this.type) {
+                    case 'star':
+                        this.drawStar(audioSize);
+                        break;
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(0, 0, audioSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    default:
+                        ctx.fillRect(-audioSize, -audioSize, audioSize * 2, audioSize * 2);
+                }
+                
+                ctx.restore();
+            }
+            
+            drawStar(size) {
+                ctx.beginPath();
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i * Math.PI) / 5;
+                    const radius = i % 2 === 0 ? size : size * 0.5;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        // New visual modes
+        function drawGalaxy() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const arms = 4;
+            const points = performanceMode === 'performance' ? 150 : 300;
+            
+            for (let arm = 0; arm < arms; arm++) {
+                for (let i = 0; i < points; i++) {
+                    const t = i / points;
+                    const baseAngle = (arm / arms) * Math.PI * 2;
+                    const spiralAngle = baseAngle + t * Math.PI * 4 + state.time * state.speed;
+                    const radius = t * Math.min(canvas.width, canvas.height) * 0.4 * state.scale;
+                    
+                    const audioMod = state.audioData.frequencies ? 
+                        state.audioData.frequencies[Math.floor(t * bufferLength)] / 255 : 0;
+                    const finalRadius = radius + audioMod * 100 * state.audioData.overall;
+                    
+                    const x = centerX + Math.cos(spiralAngle) * finalRadius;
+                    const y = centerY + Math.sin(spiralAngle) * finalRadius;
+                    
+                    const hue = (t * 180 + state.time * state.colorShift + arm * 90) % 360;
+                    const brightness = 30 + t * 50 + audioMod * 30;
+                    const size = (2 + audioMod * 8) * state.scale * (state.intensity / 100);
+                    
+                    ctx.fillStyle = `hsl(${hue}, 100%, ${brightness}%)`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function drawDNA() {
+            const centerX = canvas.width / 2;
+            const strands = 2;
+            const points = performanceMode === 'performance' ? 100 : 200;
+            const height = canvas.height * 0.8;
+            
+            for (let strand = 0; strand < strands; strand++) {
+                ctx.strokeStyle = `hsl(${strand * 180 + state.time * state.colorShift}, 100%, 60%)`;
+                ctx.lineWidth = 3 * state.scale;
+                ctx.beginPath();
+                
+                for (let i = 0; i < points; i++) {
+                    const t = i / points;
+                    const y = (canvas.height - height) / 2 + t * height;
+                    const helixAngle = t * Math.PI * 8 + state.time * state.speed + strand * Math.PI;
+                    const audioMod = state.audioData.frequencies ? 
+                        state.audioData.frequencies[Math.floor(t * bufferLength)] / 255 : 0;
+                    const radius = (50 + audioMod * 100) * state.scale * (state.intensity / 100);
+                    
+                    const x = centerX + Math.cos(helixAngle) * radius;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                    
+                    // Connection lines
+                    if (strand === 0 && i % 10 === 0) {
+                        const otherX = centerX + Math.cos(helixAngle + Math.PI) * radius;
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(otherX, y);
+                        ctx.moveTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+        
+        function drawNeural() {
+            const nodes = performanceMode === 'performance' ? 20 : 40;
+            const connections = [];
+            const nodePositions = [];
+            
+            // Generate nodes
+            for (let i = 0; i < nodes; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const energy = state.audioData.frequencies ? 
+                    state.audioData.frequencies[Math.floor((i / nodes) * bufferLength)] / 255 : 0;
+                
+                nodePositions.push({x, y, energy});
+                
+                const hue = (i * 10 + state.time * state.colorShift) % 360;
+                const size = (5 + energy * 20) * state.scale * (state.intensity / 100);
+                
+                ctx.fillStyle = `hsl(${hue}, 100%, ${50 + energy * 30}%)`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw connections
+            ctx.strokeStyle = `hsla(${state.time * state.colorShift}, 80%, 60%, 0.3)`;
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i < nodes; i++) {
+                for (let j = i + 1; j < nodes; j++) {
+                    const node1 = nodePositions[i];
+                    const node2 = nodePositions[j];
+                    const distance = Math.sqrt(Math.pow(node1.x - node2.x, 2) + Math.pow(node1.y - node2.y, 2));
+                    
+                    if (distance < 200 * state.scale && (node1.energy > 0.3 || node2.energy > 0.3)) {
+                        ctx.beginPath();
+                        ctx.moveTo(node1.x, node1.y);
+                        ctx.lineTo(node2.x, node2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        function drawFlower() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const layers = 5 + Math.floor(state.audioData.overall * 10);
+            
+            for (let layer = 0; layer < layers; layer++) {
+                const radius = (20 + layer * 25) * state.scale * (1 + state.audioData.bass);
+                const petals = 8 + layer * 2 + Math.floor(state.audioData.treble * 12);
+                const audioRotation = state.audioData.mid * Math.PI;
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(state.time * state.speed * 0.2 * (layer % 2 ? 1 : -1) + audioRotation);
+                
+                for (let i = 0; i < petals; i++) {
+                    const angle = (i / petals) * Math.PI * 2;
+                    const hue = (layer * 60 + i * 15 + state.time * state.colorShift + state.audioData.treble * 180) % 360;
+                    
+                    ctx.save();
+                    ctx.rotate(angle);
+                    ctx.translate(radius, 0);
+                    
+                    const petalSize = (10 + state.audioData.bass * 15) * state.scale * (state.intensity / 100);
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, petalSize);
+                    gradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 0.9)`);
+                    gradient.addColorStop(1, `hsla(${hue}, 100%, 40%, 0.1)`);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, petalSize, petalSize * 0.5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        // Performance mode switching
+        function setPerformanceMode(mode) {
+            performanceMode = mode;
+            document.querySelectorAll('.performance-mode, .quality-mode').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(mode === 'performance' ? 'perf-btn' : 'qual-btn').classList.add('active');
+            
+            // Adjust settings based on mode
+            if (mode === 'performance') {
+                state.particleLimit = Math.min(state.particleLimit, 200);
+                if (analyser) {
+                    analyser.fftSize = 256;
+                    bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
+                }
+            } else {
+                if (analyser) {
+                    analyser.fftSize = 512;
+                    bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
+                }
+            }
+            
+            resizeCanvas();
+        }
+        
+        // Auto mode functionality
+        function toggleAutoMode() {
+            autoModeActive = !autoModeActive;
+            const autoBtn = document.getElementById('auto-btn');
+            const autoModeDiv = document.getElementById('autoMode');
+            
+            if (autoModeActive) {
+                autoBtn.classList.add('active');
+                autoBtn.textContent = '🔄 Auto Mode ON';
+                autoModeDiv.style.display = 'block';
+                autoModeTimer = Date.now();
+            } else {
+                autoBtn.classList.remove('active');
+                autoBtn.textContent = '🤖 Auto Mode';
+                autoModeDiv.style.display = 'none';
+            }
+        }
+        
+        function updateAutoMode() {
+            if (!autoModeActive) return;
+            
+            const elapsed = Date.now() - autoModeTimer;
+            const remaining = Math.max(0, autoModeDuration - elapsed);
+            
+            document.getElementById('nextModeTime').textContent = Math.ceil(remaining / 1000) + 's';
+            
+            if (remaining <= 0) {
+                currentAutoModeIndex = (currentAutoModeIndex + 1) % visualModes.length;
+                setMode(visualModes[currentAutoModeIndex]);
+                document.getElementById('currentAutoMode').textContent = visualModes[currentAutoModeIndex];
+                autoModeTimer = Date.now();
+            }
+        }
+        
+        // Screenshot functionality
+        function saveScreenshot() {
+            const link = document.createElement('a');
+            link.download = 'audio-reactive-' + Date.now() + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Reset settings
+        function resetSettings() {
+            document.getElementById('speed').value = 1;
+            document.getElementById('scale').value = 1;
+            document.getElementById('colorShift').value = 50;
+            document.getElementById('intensity').value = 100;
+            document.getElementById('glow').value = 50;
+            document.getElementById('bassBoost').value = 100;
+            document.getElementById('midBoost').value = 100;
+            document.getElementById('trebleBoost').value = 100;
+            document.getElementById('reactivity').value = 150;
+            document.getElementById('beatSens').value = 70;
+            document.getElementById('particleLimit').value = 300;
+            updateValues();
+        }
+        
+        // Animation loop
+        let lastTime = 0;
+        let fps = 0;
+        let fpsUpdateTime = 0;
+        
+        function animate(currentTime) {
+            try {
+                if (currentTime - fpsUpdateTime > 500) {
+                    const deltaTime = currentTime - lastTime;
+                    fps = Math.round(1000 / deltaTime);
+                    document.getElementById('fps').textContent = `FPS: ${fps}`;
+                    fpsUpdateTime = currentTime;
+                }
+                lastTime = currentTime;
+                
+                analyzeAudio();
+                
+                // Clear with fade effect
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                state.time = currentTime * 0.001;
+                
+                // Draw main visual based on mode
+                switch(state.mode) {
+                    case 'spectrum': drawSpectrum(); break;
+                    case 'waveform': drawWaveform(); break;
+                    case 'particles': drawAudioParticles(); break;
+                    case 'kaleidoscope': drawAudioKaleidoscope(); break;
+                    case 'tunnel': drawAudioTunnel(); break;
+                    case 'fractal': drawAudioFractal(); break;
+                    case 'plasma': drawAudioPlasma(); break;
+                    case 'mandala': drawAudioMandala(); break;
+                    case 'matrix': drawAudioMatrix(); break;
+                    case 'spiral': drawAudioSpiral(); break;
+                    case 'galaxy': drawGalaxy(); break;
+                    case 'dna': drawDNA(); break;
+                    case 'neural': drawNeural(); break;
+                    case 'flower': drawFlower(); break;
+                }
+                
+                drawSmallVisualizer();
+                
+            } catch (e) {
+                console.error('Animation error:', e);
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // Control functions
+        function setMode(mode) {
+            state.mode = mode;
+            document.querySelectorAll('.preset-buttons button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(mode + '-btn').classList.add('active');
+        }
+        
+        function loadPreset(preset) {
+            switch(preset) {
+                case 'bass':
+                    setMode('spectrum');
+                    document.getElementById('bassBoost').value = 200;
+                    document.getElementById('midBoost').value = 50;
+                    document.getElementById('trebleBoost').value = 50;
+                    document.getElementById('reactivity').value = 250;
+                    break;
+                case 'electronic':
+                    setMode('tunnel');
+                    document.getElementById('bassBoost').value = 150;
+                    document.getElementById('midBoost').value = 150;
+                    document.getElementById('trebleBoost').value = 200;
+                    document.getElementById('reactivity').value = 200;
+                    break;
+                case 'ambient':
+                    setMode('mandala');
+                    document.getElementById('bassBoost').value = 80;
+                    document.getElementById('midBoost').value = 120;
+                    document.getElementById('trebleBoost').value = 100;
+                    document.getElementById('reactivity').value = 100;
+                    break;
+                case 'rock':
+                    setMode('fractal');
+                    document.getElementById('bassBoost').value = 180;
+                    document.getElementById('midBoost').value = 120;
+                    document.getElementById('trebleBoost').value = 140;
+                    document.getElementById('reactivity').value = 180;
+                    break;
+                case 'psychedelic':
+                    setMode('kaleidoscope');
+                    document.getElementById('bassBoost').value = 150;
+                    document.getElementById('midBoost').value = 150;
+                    document.getElementById('trebleBoost').value = 150;
+                    document.getElementById('reactivity').value = 300;
+                    break;
+            }
+            updateValues();
+        }
+        
+        function updateValues() {
+            state.speed = parseFloat(document.getElementById('speed').value);
+            state.scale = parseFloat(document.getElementById('scale').value);
+            state.colorShift = parseInt(document.getElementById('colorShift').value);
+            state.intensity = parseInt(document.getElementById('intensity').value);
+            state.glow = parseInt(document.getElementById('glow').value);
+            state.bassBoost = parseInt(document.getElementById('bassBoost').value);
+            state.midBoost = parseInt(document.getElementById('midBoost').value);
+            state.trebleBoost = parseInt(document.getElementById('trebleBoost').value);
+            state.reactivity = parseInt(document.getElementById('reactivity').value);
+            state.beatSens = parseInt(document.getElementById('beatSens').value);
+            state.particleLimit = parseInt(document.getElementById('particleLimit').value);
+            
+            document.getElementById('speed-val').textContent = state.speed;
+            document.getElementById('scale-val').textContent = state.scale;
+            document.getElementById('colorShift-val').textContent = state.colorShift;
+            document.getElementById('intensity-val').textContent = state.intensity;
+            document.getElementById('glow-val').textContent = state.glow;
+            document.getElementById('bassBoost-val').textContent = state.bassBoost;
+            document.getElementById('midBoost-val').textContent = state.midBoost;
+            document.getElementById('trebleBoost-val').textContent = state.trebleBoost;
+            document.getElementById('reactivity-val').textContent = state.reactivity;
+            document.getElementById('beatSens-val').textContent = state.beatSens;
+            document.getElementById('particleLimit-val').textContent = state.particleLimit;
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // Enhanced spectrum with multiple styles
+        function drawSpectrum() {
+            if (!state.audioData.frequencies) return;
+            
+            const barWidth = canvas.width / bufferLength;
+            const centerY = canvas.height / 2;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (state.audioData.frequencies[i] / 255) * canvas.height * 0.4 * state.scale * (state.intensity / 100);
+                const hue = (i * 3 + state.time * state.colorShift) % 360;
+                const brightness = 40 + (state.audioData.frequencies[i] / 255) * 40;
+                
+                // Main bars
+                ctx.fillStyle = `hsl(${hue}, 100%, ${brightness}%)`;
+                ctx.fillRect(i * barWidth, centerY - barHeight, barWidth - 1, barHeight);
+                ctx.fillRect(i * barWidth, centerY, barWidth - 1, barHeight);
+                
+                // Glow effect
+                if (state.glow > 0) {
+                    ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                    ctx.shadowBlur = barHeight * (state.glow / 100);
+                    ctx.fillRect(i * barWidth, centerY - barHeight * 0.1, barWidth - 1, barHeight * 0.2);
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+        
+        // Enhanced waveform with 3D effect
+        function drawWaveform() {
+            if (!state.audioData.frequencies) return;
+            
+            const centerY = canvas.height / 2;
+            const centerX = canvas.width / 2;
+            const amplitude = centerY * 0.3 * state.scale * (1 + state.audioData.overall) * (state.intensity / 100);
+            
+            // Linear waveform
+            ctx.strokeStyle = `hsl(${state.time * state.colorShift}, 100%, 60%)`;
+            ctx.lineWidth = 3 * state.scale;
+            ctx.beginPath();
+            
+            for (let i = 0; i < bufferLength; i++) {
+                const x = (i / bufferLength) * canvas.width;
+                const y = centerY + (state.audioData.frequencies[i] / 255 - 0.5) * amplitude;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Circular waveform with 3D effect
+            const layers = performanceMode === 'performance' ? 3 : 5;
+            for (let layer = 0; layer < layers; layer++) {
+                const radius = (150 + layer * 50) * state.scale * (1 + state.audioData.bass);
+                const layerHue = (state.time * state.colorShift + layer * 60) % 360;
+                
+                ctx.strokeStyle = `hsla(${layerHue}, 100%, 60%, ${0.8 - layer * 0.15})`;
+                ctx.lineWidth = (4 - layer) * state.scale;
+                ctx.beginPath();
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    const angle = (i / bufferLength) * Math.PI * 2;
+                    const r = radius + (state.audioData.frequencies[i] / 255) * 80 * state.scale * (state.intensity / 100);
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+        
+        // Enhanced particle system
+        function drawAudioParticles() {
+            const spawnRate = state.audioData.overall * 5 * (state.intensity / 100);
+            
+            // Spawn particles based on audio and beats
+            if (Math.random() < spawnRate || state.audioData.beat) {
+                const particleType = Math.random() < 0.5 ? 'circle' : 'star';
+                const x = state.audioData.beat ? canvas.width / 2 + (Math.random() - 0.5) * 200 : undefined;
+                const y = state.audioData.beat ? canvas.height / 2 + (Math.random() - 0.5) * 200 : undefined;
+                
+                state.particles.push(new AudioParticle(x, y, particleType));
+            }
+            
+            // Update and draw particles
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                if (!state.particles[i].update()) {
+                    state.particles.splice(i, 1);
+                } else {
+                    state.particles[i].draw();
+                }
+            }
+            
+            // Limit particles based on performance mode
+            while (state.particles.length > state.particleLimit) {
+                state.particles.shift();
+            }
+        }
+        
+        // Enhanced kaleidoscope with audio-reactive complexity
+        function drawAudioKaleidoscope() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const segments = 6 + Math.floor(state.audioData.bass * 18);
+            const layers = performanceMode === 'performance' ? 2 : 4;
+            
+            for (let layer = 0; layer < layers; layer++) {
+                for (let i = 0; i < segments; i++) {
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate((i / segments) * Math.PI * 2 + layer * 0.1);
+                    
+                    const hue = (state.time * state.colorShift + i * 20 + layer * 90 + state.audioData.treble * 180) % 360;
+                    ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${0.7 - layer * 0.15})`;
+                    ctx.lineWidth = (3 - layer) * state.scale * (1 + state.audioData.mid);
+                    
+                    const points = performanceMode === 'performance' ? 30 : 60;
+                    ctx.beginPath();
+                    for (let j = 0; j < points; j++) {
+                        const t = j / points;
+                        const angle = t * Math.PI * 4 + state.time * state.speed + layer * 0.5;
+                        const audioMod = state.audioData.frequencies ? 
+                            state.audioData.frequencies[j % bufferLength] / 255 : 0;
+                        const radius = (t * 150 + audioMod * 100 + layer * 30) * state.scale * (state.intensity / 100);
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        
+                        if (j === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        }
+        
+        // Enhanced tunnel with depth and perspective
+        function drawAudioTunnel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxRadius = 500 * state.scale;
+            const rings = performanceMode === 'performance' ? 20 : 40;
+            
+            for (let i = 0; i < rings; i++) {
+                const progress = i / rings;
+                const r = maxRadius * (1 - progress);
+                const audioMod = state.audioData.bass * Math.sin(progress * Math.PI * 2) * (state.intensity / 100);
+                const hue = (r * 0.5 + state.time * state.colorShift + state.audioData.treble * 100) % 360;
+                const brightness = 30 + progress * 50 + audioMod * 30;
+                
+                ctx.strokeStyle = `hsl(${hue}, 100%, ${brightness}%)`;
+                ctx.lineWidth = (2 + progress * 4) * state.scale;
+                
+                if (state.glow > 0) {
+                    ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                    ctx.shadowBlur = r * 0.1 * (state.glow / 100);
+                }
+                
+                ctx.beginPath();
+                const segments = Math.floor(32 * (1 - progress * 0.7));
+                for (let a = 0; a < segments; a++) {
+                    const angle = (a / segments) * Math.PI * 2;
+                    const warp = Math.sin(angle * 6 + state.time * state.speed + progress * 10) * (20 + state.audioData.mid * 60);
+                    const x = centerX + Math.cos(angle) * (r + warp);
+                    const y = centerY + Math.sin(angle) * (r + warp);
+                    
+                    if (a === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Enhanced small visualizer
+        function drawSmallVisualizer() {
+            if (!state.audioData.frequencies) return;
+            
+            vizCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            vizCtx.fillRect(0, 0, 350, 120);
+            
+            // Frequency bars
+            const barWidth = 340 / bufferLength;
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (state.audioData.frequencies[i] / 255) * 70;
+                const hue = (i * 3) % 360;
+                
+                vizCtx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                vizCtx.fillRect(5 + i * barWidth, 95 - barHeight, barWidth - 1, barHeight);
+            }
+            
+            // Audio level indicators
+            vizCtx.fillStyle = '#ff4444';
+            vizCtx.fillRect(10, 100, state.audioData.bass * 100, 6);
+            vizCtx.fillStyle = '#44ff44';
+            vizCtx.fillRect(10, 108, state.audioData.mid * 100, 6);
+            vizCtx.fillStyle = '#4444ff';
+            vizCtx.fillRect(10, 116, state.audioData.treble * 100, 6);
+            
+            // Beat indicator
+            if (state.audioData.beat) {
+                vizCtx.fillStyle = '#ffff44';
+                vizCtx.fillRect(320, 100, 20, 20);
+            }
+            
+            // Labels
+            vizCtx.fillStyle = '#ffffff';
+            vizCtx.font = '10px monospace';
+            vizCtx.fillText('BASS', 115, 106);
+            vizCtx.fillText('MID', 115, 114);
+            vizCtx.fillText('HIGH', 115, 122);
+            vizCtx.fillText('BEAT', 298, 110);
+        }
+        
+        // Event listeners
+        const sliders = ['speed', 'scale', 'colorShift', 'intensity', 'glow', 'bassBoost', 'midBoost', 'trebleBoost', 'reactivity', 'beatSens', 'particleLimit'];
+        sliders.forEach(id => {
+            document.getElementById(id).addEventListener('input', updateValues);
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'h':
+                    const elements = ['.controls', '#fps', '#audioStatus', '#visualizer', '.back-btn', '#beatDetector', '#autoMode'];
+                    elements.forEach(selector => {
+                        const el = document.querySelector(selector);
+                        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                    });
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    if (autoModeActive) toggleAutoMode();
+                    else {
+                        const randomMode = visualModes[Math.floor(Math.random() * visualModes.length)];
+                        setMode(randomMode);
+                    }
+                    break;
+                case 'p':
+                    setPerformanceMode(performanceMode === 'performance' ? 'quality' : 'performance');
+                    break;
+                case 'f':
+                    toggleFullscreen();
+                    break;
+                case 's':
+                    saveScreenshot();
+                    break;
+            }
+        });
+        
+        // Initialize
+        setMode('spectrum');
+        setPerformanceMode('quality');
+        updateValues();
+        animate(0);
+    </script>
+</body>
+</html> 

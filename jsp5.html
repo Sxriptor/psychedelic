@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Art Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-items {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            padding: 0.5rem 1rem;
+            border: 2px solid transparent;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item:hover {
+            border-color: #ff006e;
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #artCanvas {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 2rem;
+        }
+
+        .control-group h3 {
+            margin-bottom: 1rem;
+            color: #ff006e;
+            font-size: 1.1rem;
+        }
+
+        .control-item {
+            margin-bottom: 1rem;
+        }
+
+        .control-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #cccccc;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+        }
+
+        .color-input {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .preset-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 0, 110, 0.3);
+            border-color: #ff006e;
+        }
+
+        .fullscreen-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .controls-panel {
+                width: 250px;
+            }
+            
+            .nav-items {
+                gap: 1rem;
+            }
+            
+            .nav-item {
+                font-size: 0.9rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar" id="navbar">
+            <div class="logo">✨ Generative Art Studio</div>
+            <div class="nav-items">
+                <div class="nav-item active" data-mode="ascii">ASCII</div>
+                <div class="nav-item" data-mode="dots">Dots</div>
+                <div class="nav-item" data-mode="pixels">Pixels</div>
+                <div class="nav-item" data-mode="morphing">Morphing</div>
+                <div class="nav-item" data-mode="fractals">Fractals</div>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <div class="controls-panel" id="controlsPanel">
+                <div class="control-group">
+                    <h3>🎨 Visual Controls</h3>
+                    <div class="control-item">
+                        <label>Scale</label>
+                        <input type="range" class="slider" id="scaleSlider" min="0.1" max="3" step="0.1" value="1">
+                    </div>
+                    <div class="control-item">
+                        <label>Speed</label>
+                        <input type="range" class="slider" id="speedSlider" min="0.1" max="5" step="0.1" value="1">
+                    </div>
+                    <div class="control-item">
+                        <label>Chaos</label>
+                        <input type="range" class="slider" id="chaosSlider" min="0" max="100" step="1" value="20">
+                    </div>
+                    <div class="control-item">
+                        <label>Rotation</label>
+                        <input type="range" class="slider" id="rotationSlider" min="0" max="10" step="0.1" value="0">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>🌈 Colors</h3>
+                    <div class="control-item">
+                        <label>Primary Color</label>
+                        <input type="color" class="color-input" id="primaryColor" value="#ff006e">
+                    </div>
+                    <div class="control-item">
+                        <label>Secondary Color</label>
+                        <input type="color" class="color-input" id="secondaryColor" value="#8338ec">
+                    </div>
+                    <div class="control-item">
+                        <label>Accent Color</label>
+                        <input type="color" class="color-input" id="accentColor" value="#3a86ff">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>⚡ Effects</h3>
+                    <div class="control-item">
+                        <label>Blur</label>
+                        <input type="range" class="slider" id="blurSlider" min="0" max="20" step="1" value="0">
+                    </div>
+                    <div class="control-item">
+                        <label>Opacity</label>
+                        <input type="range" class="slider" id="opacitySlider" min="0.1" max="1" step="0.1" value="1">
+                    </div>
+                    <div class="control-item">
+                        <label>Glow</label>
+                        <input type="range" class="slider" id="glowSlider" min="0" max="50" step="1" value="10">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>🎯 Presets</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="loadPreset('neon')">Neon</button>
+                        <button class="preset-btn" onclick="loadPreset('retro')">Retro</button>
+                        <button class="preset-btn" onclick="loadPreset('cosmic')">Cosmic</button>
+                        <button class="preset-btn" onclick="loadPreset('minimal')">Minimal</button>
+                        <button class="preset-btn" onclick="loadPreset('chaos')">Chaos</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-area">
+                <canvas id="artCanvas"></canvas>
+                <div class="fullscreen-hint">Press SPACE for fullscreen</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GenerativeArtStudio {
+            constructor() {
+                this.canvas = document.getElementById('artCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.mode = 'ascii';
+                this.animationId = null;
+                this.particles = [];
+                this.time = 0;
+                this.isFullscreen = false;
+                
+                this.settings = {
+                    scale: 1,
+                    speed: 1,
+                    chaos: 20,
+                    rotation: 0,
+                    primaryColor: '#ff006e',
+                    secondaryColor: '#8338ec',
+                    accentColor: '#3a86ff',
+                    blur: 0,
+                    opacity: 1,
+                    glow: 10
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.setupControls();
+                this.startAnimation();
+            }
+
+            setupCanvas() {
+                const resizeCanvas = () => {
+                    this.canvas.width = this.canvas.offsetWidth;
+                    this.canvas.height = this.canvas.offsetHeight;
+                };
+                
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+            }
+
+            setupEventListeners() {
+                // Navigation
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        document.querySelector('.nav-item.active').classList.remove('active');
+                        item.classList.add('active');
+                        this.mode = item.dataset.mode;
+                        this.initializeMode();
+                    });
+                });
+
+                // Fullscreen toggle
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.toggleFullscreen();
+                    }
+                });
+
+                // Mouse interaction
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mouseX = e.clientX - rect.left;
+                    this.mouseY = e.clientY - rect.top;
+                });
+            }
+
+            setupControls() {
+                const controls = {
+                    'scaleSlider': 'scale',
+                    'speedSlider': 'speed',
+                    'chaosSlider': 'chaos',
+                    'rotationSlider': 'rotation',
+                    'primaryColor': 'primaryColor',
+                    'secondaryColor': 'secondaryColor',
+                    'accentColor': 'accentColor',
+                    'blurSlider': 'blur',
+                    'opacitySlider': 'opacity',
+                    'glowSlider': 'glow'
+                };
+
+                Object.entries(controls).forEach(([id, setting]) => {
+                    const element = document.getElementById(id);
+                    element.addEventListener('input', (e) => {
+                        this.settings[setting] = e.target.type === 'color' ? e.target.value : parseFloat(e.target.value);
+                    });
+                });
+            }
+
+            toggleFullscreen() {
+                const navbar = document.getElementById('navbar');
+                const controlsPanel = document.getElementById('controlsPanel');
+                
+                this.isFullscreen = !this.isFullscreen;
+                
+                if (this.isFullscreen) {
+                    navbar.classList.add('hidden');
+                    controlsPanel.style.display = 'none';
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen();
+                    }
+                } else {
+                    navbar.classList.remove('hidden');
+                    controlsPanel.style.display = 'block';
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+
+            initializeMode() {
+                // Clear all mode-specific data
+                this.particles = [];
+                this.asciiChars = [];
+                this.drops = [];
+                this.pixelGrid = [];
+                this.morphShapes = [];
+                this.mouseX = 0;
+                this.mouseY = 0;
+                
+                switch(this.mode) {
+                    case 'ascii':
+                        this.initASCII();
+                        break;
+                    case 'dots':
+                        this.initDots();
+                        break;
+                    case 'pixels':
+                        this.initPixels();
+                        break;
+                    case 'morphing':
+                        this.initMorphing();
+                        break;
+                    case 'fractals':
+                        this.initFractals();
+                        break;
+                }
+            }
+
+            initASCII() {
+                this.asciiChars = '01101011010110100101'.split('');
+                this.matrixColumns = Math.floor(this.canvas.width / 20);
+                this.drops = new Array(this.matrixColumns).fill(1);
+            }
+
+            initDots() {
+                const count = 100;
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        radius: Math.random() * 3 + 1,
+                        hue: Math.random() * 360
+                    });
+                }
+            }
+
+            initPixels() {
+                this.pixelGrid = [];
+                this.pixelSize = 4;
+                this.gridWidth = Math.floor(this.canvas.width / this.pixelSize);
+                this.gridHeight = Math.floor(this.canvas.height / this.pixelSize);
+                
+                for (let x = 0; x < this.gridWidth; x++) {
+                    this.pixelGrid[x] = [];
+                    for (let y = 0; y < this.gridHeight; y++) {
+                        this.pixelGrid[x][y] = Math.random() > 0.5 ? 1 : 0;
+                    }
+                }
+            }
+
+            initMorphing() {
+                this.morphShapes = [];
+                for (let i = 0; i < 5; i++) {
+                    this.morphShapes.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        targetX: Math.random() * this.canvas.width,
+                        targetY: Math.random() * this.canvas.height,
+                        size: Math.random() * 50 + 20,
+                        morphSpeed: 0.02
+                    });
+                }
+            }
+
+            initFractals() {
+                this.fractalZoom = 1;
+                this.fractalOffsetX = 0;
+                this.fractalOffsetY = 0;
+            }
+
+            startAnimation() {
+                const animate = () => {
+                    this.time += 0.016 * this.settings.speed;
+                    this.clearCanvas();
+                    
+                    switch(this.mode) {
+                        case 'ascii':
+                            this.renderASCII();
+                            break;
+                        case 'dots':
+                            this.renderDots();
+                            break;
+                        case 'pixels':
+                            this.renderPixels();
+                            break;
+                        case 'morphing':
+                            this.renderMorphing();
+                            break;
+                        case 'fractals':
+                            this.renderFractals();
+                            break;
+                    }
+                    
+                    this.animationId = requestAnimationFrame(animate);
+                };
+                
+                animate();
+            }
+
+            clearCanvas() {
+                this.ctx.globalAlpha = 1;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (this.settings.blur > 0) {
+                    this.ctx.filter = `blur(${this.settings.blur}px)`;
+                } else {
+                    this.ctx.filter = 'none';
+                }
+                
+                this.ctx.globalAlpha = this.settings.opacity;
+            }
+
+            renderASCII() {
+                if (!this.drops || this.drops.length === 0) {
+                    this.initASCII();
+                    return;
+                }
+                
+                this.ctx.fillStyle = this.settings.primaryColor;
+                this.ctx.font = `${16 * this.settings.scale}px monospace`;
+                
+                for (let i = 0; i < this.drops.length; i++) {
+                    const char = this.asciiChars[Math.floor(Math.random() * this.asciiChars.length)];
+                    const x = i * 20 * this.settings.scale;
+                    const y = this.drops[i] * 20 * this.settings.scale;
+                    
+                    this.ctx.shadowColor = this.settings.primaryColor;
+                    this.ctx.shadowBlur = this.settings.glow;
+                    this.ctx.fillText(char, x, y);
+                    
+                    if (y > this.canvas.height + Math.random() * 10000) {
+                        this.drops[i] = 0;
+                    }
+                    this.drops[i] += this.settings.speed;
+                }
+            }
+
+            renderDots() {
+                if (!this.particles || this.particles.length === 0) {
+                    this.initDots();
+                    return;
+                }
+                
+                this.particles.forEach((particle, index) => {
+                    // Update position
+                    particle.x += particle.vx * this.settings.speed;
+                    particle.y += particle.vy * this.settings.speed;
+                    
+                    // Bounce off edges
+                    if (particle.x <= 0 || particle.x >= this.canvas.width) {
+                        particle.vx *= -1;
+                    }
+                    if (particle.y <= 0 || particle.y >= this.canvas.height) {
+                        particle.vy *= -1;
+                    }
+                    
+                    // Add chaos
+                    particle.vx += (Math.random() - 0.5) * this.settings.chaos * 0.01;
+                    particle.vy += (Math.random() - 0.5) * this.settings.chaos * 0.01;
+                    
+                    // Draw particle
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.radius * this.settings.scale, 0, Math.PI * 2);
+                    
+                    const gradient = this.ctx.createRadialGradient(
+                        particle.x, particle.y, 0,
+                        particle.x, particle.y, particle.radius * this.settings.scale
+                    );
+                    gradient.addColorStop(0, this.settings.primaryColor);
+                    gradient.addColorStop(1, this.settings.secondaryColor);
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.shadowColor = this.settings.primaryColor;
+                    this.ctx.shadowBlur = this.settings.glow;
+                    this.ctx.fill();
+                    
+                    // Connect nearby particles
+                    this.particles.forEach((other, otherIndex) => {
+                        if (index !== otherIndex) {
+                            const distance = Math.sqrt(
+                                Math.pow(particle.x - other.x, 2) + Math.pow(particle.y - other.y, 2)
+                            );
+                            
+                            if (distance < 100) {
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(particle.x, particle.y);
+                                this.ctx.lineTo(other.x, other.y);
+                                this.ctx.strokeStyle = this.settings.accentColor;
+                                this.ctx.globalAlpha = (100 - distance) / 100 * this.settings.opacity;
+                                this.ctx.stroke();
+                                this.ctx.globalAlpha = this.settings.opacity;
+                            }
+                        }
+                    });
+                });
+            }
+
+            renderPixels() {
+                if (!this.pixelGrid || this.pixelGrid.length === 0) {
+                    this.initPixels();
+                    return;
+                }
+                
+                const newGrid = [];
+                
+                // Conway's Game of Life with modifications
+                for (let x = 0; x < this.gridWidth; x++) {
+                    newGrid[x] = [];
+                    for (let y = 0; y < this.gridHeight; y++) {
+                        const neighbors = this.countNeighbors(x, y);
+                        const current = this.pixelGrid[x][y];
+                        
+                        // Add chaos to the rules
+                        const chaosInfluence = Math.random() < this.settings.chaos / 100;
+                        
+                        if (current === 1) {
+                            newGrid[x][y] = (neighbors === 2 || neighbors === 3) && !chaosInfluence ? 1 : 0;
+                        } else {
+                            newGrid[x][y] = (neighbors === 3) || chaosInfluence ? 1 : 0;
+                        }
+                    }
+                }
+                
+                this.pixelGrid = newGrid;
+                
+                // Render pixels
+                for (let x = 0; x < this.gridWidth; x++) {
+                    for (let y = 0; y < this.gridHeight; y++) {
+                        if (this.pixelGrid[x][y] === 1) {
+                            const pixelX = x * this.pixelSize * this.settings.scale;
+                            const pixelY = y * this.pixelSize * this.settings.scale;
+                            const size = this.pixelSize * this.settings.scale;
+                            
+                            this.ctx.fillStyle = this.settings.primaryColor;
+                            this.ctx.shadowColor = this.settings.primaryColor;
+                            this.ctx.shadowBlur = this.settings.glow;
+                            this.ctx.fillRect(pixelX, pixelY, size, size);
+                        }
+                    }
+                }
+            }
+
+            countNeighbors(x, y) {
+                let count = 0;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        
+                        if (nx >= 0 && nx < this.gridWidth && ny >= 0 && ny < this.gridHeight) {
+                            count += this.pixelGrid[nx][ny];
+                        }
+                    }
+                }
+                return count;
+            }
+
+            renderMorphing() {
+                if (!this.morphShapes || this.morphShapes.length === 0) {
+                    this.initMorphing();
+                    return;
+                }
+                
+                this.morphShapes.forEach(shape => {
+                    // Move towards target
+                    shape.x += (shape.targetX - shape.x) * shape.morphSpeed * this.settings.speed;
+                    shape.y += (shape.targetY - shape.y) * shape.morphSpeed * this.settings.speed;
+                    
+                    // Set new target when close
+                    if (Math.abs(shape.x - shape.targetX) < 5 && Math.abs(shape.y - shape.targetY) < 5) {
+                        shape.targetX = Math.random() * this.canvas.width;
+                        shape.targetY = Math.random() * this.canvas.height;
+                    }
+                    
+                    // Add rotation and chaos
+                    const rotation = this.time * this.settings.rotation + Math.sin(this.time) * this.settings.chaos * 0.1;
+                    
+                    this.ctx.save();
+                    this.ctx.translate(shape.x, shape.y);
+                    this.ctx.rotate(rotation);
+                    
+                    // Create morphing shape
+                    this.ctx.beginPath();
+                    const sides = 6;
+                    for (let i = 0; i < sides; i++) {
+                        const angle = (i / sides) * Math.PI * 2;
+                        const radius = shape.size * this.settings.scale * (1 + Math.sin(this.time * 2) * 0.3);
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        
+                        if (i === 0) {
+                            this.ctx.moveTo(x, y);
+                        } else {
+                            this.ctx.lineTo(x, y);
+                        }
+                    }
+                    this.ctx.closePath();
+                    
+                    const gradient = this.ctx.createLinearGradient(-shape.size, -shape.size, shape.size, shape.size);
+                    gradient.addColorStop(0, this.settings.primaryColor);
+                    gradient.addColorStop(0.5, this.settings.secondaryColor);
+                    gradient.addColorStop(1, this.settings.accentColor);
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.shadowColor = this.settings.primaryColor;
+                    this.ctx.shadowBlur = this.settings.glow;
+                    this.ctx.fill();
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            renderFractals() {
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                const imageData = this.ctx.createImageData(width, height);
+                const data = imageData.data;
+                
+                const zoom = this.fractalZoom * this.settings.scale;
+                const offsetX = this.fractalOffsetX + Math.sin(this.time * 0.5) * this.settings.chaos;
+                const offsetY = this.fractalOffsetY + Math.cos(this.time * 0.3) * this.settings.chaos;
+                
+                for (let x = 0; x < width; x += 2) { // Skip pixels for performance
+                    for (let y = 0; y < height; y += 2) {
+                        const zx = (x - width / 2) / (width / 4) / zoom + offsetX;
+                        const zy = (y - height / 2) / (height / 4) / zoom + offsetY;
+                        
+                        const iterations = this.mandelbrot(zx, zy, 100);
+                        const colorIntensity = iterations / 100;
+                        
+                        const r = Math.sin(colorIntensity * Math.PI + this.time) * 127 + 128;
+                        const g = Math.sin(colorIntensity * Math.PI + this.time + 2) * 127 + 128;
+                        const b = Math.sin(colorIntensity * Math.PI + this.time + 4) * 127 + 128;
+                        
+                        const index = (y * width + x) * 4;
+                        data[index] = r;
+                        data[index + 1] = g;
+                        data[index + 2] = b;
+                        data[index + 3] = 255 * this.settings.opacity;
+                        
+                        // Fill adjacent pixels for performance
+                        if (x + 1 < width) {
+                            const nextIndex = (y * width + x + 1) * 4;
+                            data[nextIndex] = r;
+                            data[nextIndex + 1] = g;
+                            data[nextIndex + 2] = b;
+                            data[nextIndex + 3] = 255 * this.settings.opacity;
+                        }
+                        if (y + 1 < height) {
+                            const belowIndex = ((y + 1) * width + x) * 4;
+                            data[belowIndex] = r;
+                            data[belowIndex + 1] = g;
+                            data[belowIndex + 2] = b;
+                            data[belowIndex + 3] = 255 * this.settings.opacity;
+                        }
+                    }
+                }
+                
+                this.ctx.putImageData(imageData, 0, 0);
+                
+                // Update fractal animation
+                this.fractalZoom += 0.001 * this.settings.speed;
+                this.fractalOffsetX += Math.sin(this.time * 0.1) * 0.001;
+                this.fractalOffsetY += Math.cos(this.time * 0.07) * 0.001;
+            }
+
+            mandelbrot(cx, cy, maxIterations) {
+                let zx = 0;
+                let zy = 0;
+                let iterations = 0;
+                
+                while (zx * zx + zy * zy < 4 && iterations < maxIterations) {
+                    const temp = zx * zx - zy * zy + cx;
+                    zy = 2 * zx * zy + cy;
+                    zx = temp;
+                    iterations++;
+                }
+                
+                return iterations;
+            }
+        }
+
+        // Preset configurations
+        const presets = {
+            neon: {
+                primaryColor: '#ff0080',
+                secondaryColor: '#00ff80',
+                accentColor: '#8000ff',
+                glow: 20,
+                speed: 1.5,
+                chaos: 30
+            },
+            retro: {
+                primaryColor: '#ff6b35',
+                secondaryColor: '#f7931e',
+                accentColor: '#ffcd3c',
+                glow: 5,
+                speed: 0.8,
+                chaos: 10
+            },
+            cosmic: {
+                primaryColor: '#4a00e0',
+                secondaryColor: '#8e2de2',
+                accentColor: '#ff006e',
+                glow: 25,
+                speed: 0.5,
+                chaos: 50
+            },
+            minimal: {
+                primaryColor: '#ffffff',
+                secondaryColor: '#cccccc',
+                accentColor: '#888888',
+                glow: 2,
+                speed: 0.3,
+                chaos: 5
+            },
+            chaos: {
+                primaryColor: '#ff0000',
+                secondaryColor: '#00ff00',
+                accentColor: '#0000ff',
+                glow: 30,
+                speed: 3,
+                chaos: 80
+            }
+        };
+
+        function loadPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            Object.entries(preset).forEach(([key, value]) => {
+                app.settings[key] = value;
+                
+                // Update UI controls
+                const element = document.getElementById(key === 'primaryColor' ? 'primaryColor' : 
+                                                     key === 'secondaryColor' ? 'secondaryColor' :
+                                                     key === 'accentColor' ? 'accentColor' :
+                                                     key === 'glow' ? 'glowSlider' :
+                                                     key === 'speed' ? 'speedSlider' :
+                                                     key === 'chaos' ? 'chaosSlider' : null);
+                
+                if (element) {
+                    element.value = value;
+                }
+            });
+        }
+
+        // Advanced visual effects
+        function addVisualEffects() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Add particle trails
+            ctx.globalCompositeOperation = 'lighter';
+            
+            // Add screen distortion effects
+            if (app.settings.chaos > 50) {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    if (Math.random() < 0.01) {
+                        data[i] = 255 - data[i];     // Red
+                        data[i + 1] = 255 - data[i + 1]; // Green
+                        data[i + 2] = 255 - data[i + 2]; // Blue
+                    }
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+            }
+            
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // Audio reactivity (if available)
+        class AudioVisualizer {
+            constructor() {
+                this.audioContext = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.isActive = false;
+            }
+
+            async init() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    const source = this.audioContext.createMediaStreamSource(stream);
+                    source.connect(this.analyser);
+                    
+                    this.analyser.fftSize = 256;
+                    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                    this.isActive = true;
+                } catch (error) {
+                    console.log('Audio not available:', error);
+                }
+            }
+
+            getFrequencyData() {
+                if (!this.isActive) return null;
+                this.analyser.getByteFrequencyData(this.dataArray);
+                return this.dataArray;
+            }
+        }
+
+        // Enhanced mouse interaction
+        class MouseInteraction {
+            constructor(canvas, app) {
+                this.canvas = canvas;
+                this.app = app;
+                this.mouseTrail = [];
+                this.setupListeners();
+            }
+
+            setupListeners() {
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    this.mouseTrail.push({ x, y, time: Date.now() });
+                    
+                    // Keep trail length manageable
+                    if (this.mouseTrail.length > 20) {
+                        this.mouseTrail.shift();
+                    }
+                    
+                    // Influence particles based on mouse position
+                    this.influenceParticles(x, y);
+                });
+
+                this.canvas.addEventListener('click', () => {
+                    this.createExplosion();
+                });
+            }
+
+            influenceParticles(mouseX, mouseY) {
+                if (this.app.mode === 'dots' && this.app.particles) {
+                    this.app.particles.forEach(particle => {
+                        const dx = mouseX - particle.x;
+                        const dy = mouseY - particle.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 100) {
+                            const force = (100 - distance) / 100;
+                            particle.vx += (dx / distance) * force * 0.1;
+                            particle.vy += (dy / distance) * force * 0.1;
+                        }
+                    });
+                }
+            }
+
+            createExplosion() {
+                // Add explosion effect at mouse position
+                if (this.app.mode === 'dots') {
+                    for (let i = 0; i < 10; i++) {
+                        this.app.particles.push({
+                            x: this.app.mouseX || this.canvas.width / 2,
+                            y: this.app.mouseY || this.canvas.height / 2,
+                            vx: (Math.random() - 0.5) * 10,
+                            vy: (Math.random() - 0.5) * 10,
+                            radius: Math.random() * 5 + 2,
+                            life: 1,
+                            decay: 0.02
+                        });
+                    }
+                }
+            }
+
+            renderTrail(ctx) {
+                if (this.mouseTrail.length < 2) return;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.mouseTrail[0].x, this.mouseTrail[0].y);
+                
+                for (let i = 1; i < this.mouseTrail.length; i++) {
+                    const alpha = i / this.mouseTrail.length;
+                    ctx.globalAlpha = alpha * 0.5;
+                    ctx.lineTo(this.mouseTrail[i].x, this.mouseTrail[i].y);
+                }
+                
+                ctx.strokeStyle = this.app.settings.accentColor;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Performance monitor
+        class PerformanceMonitor {
+            constructor() {
+                this.fps = 0;
+                this.frameCount = 0;
+                this.lastTime = performance.now();
+                this.showStats = false;
+            }
+
+            update() {
+                this.frameCount++;
+                const currentTime = performance.now();
+                
+                if (currentTime - this.lastTime >= 1000) {
+                    this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
+                    this.frameCount = 0;
+                    this.lastTime = currentTime;
+                }
+            }
+
+            render(ctx) {
+                if (!this.showStats) return;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(10, 10, 100, 30);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '14px monospace';
+                ctx.fillText(`FPS: ${this.fps}`, 15, 30);
+            }
+
+            toggle() {
+                this.showStats = !this.showStats;
+            }
+        }
+
+        // Initialize the application
+        let app;
+        let audioVisualizer;
+        let mouseInteraction;
+        let performanceMonitor;
+
+        window.addEventListener('load', () => {
+            app = new GenerativeArtStudio();
+            audioVisualizer = new AudioVisualizer();
+            mouseInteraction = new MouseInteraction(app.canvas, app);
+            performanceMonitor = new PerformanceMonitor();
+            
+            // Initialize audio (optional)
+            document.addEventListener('click', () => {
+                if (!audioVisualizer.isActive) {
+                    audioVisualizer.init();
+                }
+            }, { once: true });
+            
+            // Performance monitoring toggle (F key)
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'f' || e.key === 'F') {
+                    performanceMonitor.toggle();
+                }
+            });
+            
+            // Initialize with ASCII mode
+            app.initializeMode();
+        });
+
+        // Add window resize handler
+        window.addEventListener('resize', () => {
+            if (app) {
+                app.setupCanvas();
+                app.initializeMode();
+            }
+        });
+
+        // Export functionality
+        function exportArt() {
+            const link = document.createElement('a');
+            link.download = `generative-art-${Date.now()}.png`;
+            link.href = app.canvas.toDataURL();
+            link.click();
+        }
+
+        // Add export button functionality
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 's' && e.ctrlKey) {
+                e.preventDefault();
+                exportArt();
+            }
+        });
+    </script>
+</body>
+</html>

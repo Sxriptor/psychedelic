@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychedelic Visual Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            color: #fff;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 10;
+            max-width: 300px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-group {
+            margin: 15px 0;
+            border: 1px solid #00ffff;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(255, 0, 255, 0.1);
+        }
+        
+        .control-group h3 {
+            color: #00ffff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #ff00ff;
+        }
+        
+        button.active {
+            background: linear-gradient(45deg, #ffff00, #ff0000);
+            box-shadow: 0 0 15px #ffff00;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        label {
+            color: #ffff00;
+            display: block;
+            margin: 5px 0;
+            text-shadow: 0 0 5px #ffff00;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        #fps {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #00ff00;
+            z-index: 10;
+            font-size: 18px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="fps">FPS: 0</div>
+    
+    <div class="controls">
+        <h2 style="text-align: center; color: #ff00ff; text-shadow: 0 0 20px #ff00ff;">🌈 TRIP CONTROL 🌈</h2>
+        
+        <div class="control-group">
+            <h3>🎨 Visual Modes</h3>
+            <div class="preset-buttons">
+                <button onclick="setMode('kaleidoscope')" id="kaleidoscope-btn">Kaleidoscope</button>
+                <button onclick="setMode('fractal')" id="fractal-btn">Fractals</button>
+                <button onclick="setMode('plasma')" id="plasma-btn">Plasma</button>
+                <button onclick="setMode('tunnel')" id="tunnel-btn">Tunnel</button>
+                <button onclick="setMode('mandala')" id="mandala-btn">Mandala</button>
+                <button onclick="setMode('wormhole')" id="wormhole-btn">Wormhole</button>
+                <button onclick="setMode('textWave')" id="textWave-btn">Text Wave</button>
+                <button onclick="setMode('morphGrid')" id="morphGrid-btn">Morph Grid</button>
+                <button onclick="setMode('infinityMirror')" id="infinityMirror-btn">∞ Mirror</button>
+                <button onclick="setMode('opticalFlow')" id="opticalFlow-btn">Optical Flow</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>✨ Particle Systems</h3>
+            <div class="preset-buttons">
+                <button onclick="toggleParticles('stars')" id="stars-btn">Star Field</button>
+                <button onclick="toggleParticles('spirals')" id="spirals-btn">Spirals</button>
+                <button onclick="toggleParticles('explosions')" id="explosions-btn">Explosions</button>
+                <button onclick="toggleParticles('trails')" id="trails-btn">Light Trails</button>
+                <button onclick="toggleParticles('orbs')" id="orbs-btn">Energy Orbs</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>🌀 Intensity</h3>
+            <label>Speed: <span id="speed-val">1</span></label>
+            <input type="range" id="speed" min="0.1" max="5" step="0.1" value="1">
+            
+            <label>Chaos Level: <span id="chaos-val">50</span></label>
+            <input type="range" id="chaos" min="0" max="100" step="1" value="50">
+            
+            <label>Color Shift: <span id="colorShift-val">50</span></label>
+            <input type="range" id="colorShift" min="0" max="100" step="1" value="50">
+            
+            <label>Scale: <span id="scale-val">1</span></label>
+            <input type="range" id="scale" min="0.1" max="3" step="0.1" value="1">
+        </div>
+        
+        <div class="control-group">
+            <h3>🎭 Presets</h3>
+            <div class="preset-buttons">
+                <button onclick="loadPreset('acid')">🍄 ACID TRIP</button>
+                <button onclick="loadPreset('mushroom')">🍄 SHROOM VISION</button>
+                <button onclick="loadPreset('dmt')">👁️ DMT BLAST</button>
+                <button onclick="loadPreset('heaven')">😇 DIGITAL HEAVEN</button>
+                <button onclick="loadPreset('chaos')">🔥 PURE CHAOS</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>🎵 Audio Reactive</h3>
+            <button onclick="toggleAudio()" id="audio-btn">Enable Mic</button>
+            <label>Sensitivity: <span id="audioSens-val">50</span></label>
+            <input type="range" id="audioSens" min="0" max="100" step="1" value="50">
+        </div>
+        
+        <div class="control-group">
+            <button onclick="toggleFullscreen()" style="width: 100%; background: linear-gradient(45deg, #ff0000, #ffff00);">🔥 FULLSCREEN 🔥</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+        
+        // Canvas setup
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // State
+        let state = {
+            mode: 'kaleidoscope',
+            particles: new Set(),
+            speed: 1,
+            chaos: 50,
+            colorShift: 50,
+            scale: 1,
+            time: 0,
+            audioEnabled: false,
+            audioData: null
+        };
+        
+        // Particle systems
+        const particles = [];
+        const maxParticles = 200;
+        
+        // Audio setup
+        let audioContext, analyser, microphone, dataArray;
+        
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                microphone.connect(analyser);
+                state.audioEnabled = true;
+                document.getElementById('audio-btn').textContent = 'Disable Mic';
+                document.getElementById('audio-btn').classList.add('active');
+            } catch (e) {
+                console.log('Audio not available:', e);
+            }
+        }
+        
+        function getAudioData() {
+            if (!state.audioEnabled || !analyser) return 0;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            return (sum / dataArray.length) / 255;
+        }
+        
+        // Particle class
+        class Particle {
+            constructor(type) {
+                this.type = type;
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.life = 1;
+                this.decay = Math.random() * 0.02 + 0.005;
+                this.size = (Math.random() * 10 + 2);
+                this.color = Math.random() * 360;
+                this.angle = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.2;
+            }
+            
+            update() {
+                const audioBoost = getAudioData() * document.getElementById('audioSens').value / 50;
+                const chaosLevel = state.chaos / 100;
+                const scaledSize = this.size * state.scale;
+                
+                this.angle += this.spin;
+                this.x += this.vx * state.speed * (1 + audioBoost);
+                this.y += this.vy * state.speed * (1 + audioBoost);
+                
+                // Chaos effects
+                if (chaosLevel > 0.5) {
+                    this.vx += (Math.random() - 0.5) * chaosLevel * 0.5;
+                    this.vy += (Math.random() - 0.5) * chaosLevel * 0.5;
+                }
+                
+                this.life -= this.decay;
+                this.color += state.colorShift / 10;
+                
+                // Wrap around screen
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+                
+                return this.life > 0;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                const hue = (this.color + state.time * state.colorShift) % 360;
+                const scaledSize = this.size * state.scale;
+                
+                switch(this.type) {
+                    case 'stars':
+                        ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+                        ctx.fillRect(-scaledSize/2, -scaledSize/2, scaledSize, scaledSize);
+                        break;
+                    case 'spirals':
+                        ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                        ctx.lineWidth = 2 * state.scale;
+                        ctx.beginPath();
+                        for(let i = 0; i < 20; i++) {
+                            const angle = i * 0.3;
+                            const radius = i * 2 * state.scale;
+                            ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+                        }
+                        ctx.stroke();
+                        break;
+                    case 'explosions':
+                        ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                        for(let i = 0; i < 8; i++) {
+                            const angle = (i / 8) * Math.PI * 2;
+                            const x = Math.cos(angle) * scaledSize;
+                            const y = Math.sin(angle) * scaledSize;
+                            ctx.fillRect(x-2*state.scale, y-2*state.scale, 4*state.scale, 4*state.scale);
+                        }
+                        ctx.restore();
+                        break;
+                    case 'trails':
+                        ctx.strokeStyle = `hsl(${hue}, 100%, 80%)`;
+                        ctx.lineWidth = scaledSize;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(-this.vx * 10 * state.scale, -this.vy * 10 * state.scale);
+                        ctx.stroke();
+                        break;
+                    case 'orbs':
+                        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, scaledSize);
+                        gradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 1)`);
+                        gradient.addColorStop(1, `hsla(${hue}, 100%, 40%, 0)`);
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(-scaledSize, -scaledSize, scaledSize*2, scaledSize*2);
+                        break;
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        // Visual modes
+        function drawKaleidoscope() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const segments = 12;
+            
+            for(let i = 0; i < segments; i++) {
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate((i / segments) * Math.PI * 2);
+                
+                const hue = (state.time * state.colorShift + i * 30) % 360;
+                ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                ctx.lineWidth = 2 * state.scale;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                for(let j = 0; j < 100; j++) {
+                    const angle = j * 0.1 + state.time * state.speed;
+                    const radius = (j * 3 + Math.sin(state.time * 2 + i) * 50) * state.scale;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+        
+        function drawFractal() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            function drawBranch(x, y, angle, length, depth) {
+                if (depth === 0 || length < 2) return;
+                
+                const endX = x + Math.cos(angle) * length * state.scale;
+                const endY = y + Math.sin(angle) * length * state.scale;
+                
+                const hue = (depth * 30 + state.time * state.colorShift) % 360;
+                ctx.strokeStyle = `hsl(${hue}, 100%, ${50 + depth * 10}%)`;
+                ctx.lineWidth = depth * state.scale;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                
+                const chaosAngle = (state.chaos / 100) * (Math.random() - 0.5);
+                drawBranch(endX, endY, angle - 0.5 + chaosAngle, length * 0.7, depth - 1);
+                drawBranch(endX, endY, angle + 0.5 + chaosAngle, length * 0.7, depth - 1);
+            }
+            
+            drawBranch(centerX, centerY + 200, -Math.PI/2, 150, 8);
+        }
+        
+        function drawPlasma() {
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let x = 0; x < canvas.width; x += 2) {
+                for (let y = 0; y < canvas.height; y += 2) {
+                    const value = Math.sin(x * 0.01 + state.time * state.speed) +
+                                 Math.sin(y * 0.01 + state.time * state.speed * 0.8) +
+                                 Math.sin((x + y) * 0.005 + state.time * state.speed * 1.2) +
+                                 Math.sin(Math.sqrt(x*x + y*y) * 0.01 + state.time * state.speed * 0.5);
+                    
+                    const hue = (value * 50 + state.time * state.colorShift) % 360;
+                    const rgb = hslToRgb(hue, 100, 50 + value * 25);
+                    
+                    const index = (y * canvas.width + x) * 4;
+                    data[index] = rgb[0];
+                    data[index + 1] = rgb[1];
+                    data[index + 2] = rgb[2];
+                    data[index + 3] = 255;
+                }
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+        
+        function drawTunnel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            for(let r = 300; r > 0; r -= 5) {
+                const hue = (r + state.time * state.colorShift * 10) % 360;
+                const brightness = 100 - (r / 3);
+                ctx.strokeStyle = `hsl(${hue}, 100%, ${brightness}%)`;
+                ctx.lineWidth = 3 * state.scale;
+                
+                ctx.beginPath();
+                for(let a = 0; a < Math.PI * 2; a += 0.1) {
+                    const warp = Math.sin(a * 5 + state.time * state.speed) * (state.chaos / 10);
+                    const x = centerX + Math.cos(a) * (r + warp) * state.scale;
+                    const y = centerY + Math.sin(a) * (r + warp) * state.scale;
+                    if (a === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+        
+        function drawMandala() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const layers = 8;
+            
+            for(let layer = 0; layer < layers; layer++) {
+                const radius = (50 + layer * 40) * state.scale;
+                const petals = 6 + layer * 2;
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(state.time * state.speed * 0.1 * (layer % 2 ? 1 : -1));
+                
+                for(let i = 0; i < petals; i++) {
+                    const angle = (i / petals) * Math.PI * 2;
+                    const hue = (layer * 45 + i * 15 + state.time * state.colorShift) % 360;
+                    
+                    ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.7)`;
+                    ctx.beginPath();
+                    
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    const size = (20 + Math.sin(state.time * 2 + layer) * 10) * state.scale;
+                    
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        function drawWormhole() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            for(let i = 0; i < 100; i++) {
+                const angle = i * 0.2 + state.time * state.speed;
+                const radius = (i * 5 + Math.sin(state.time + i * 0.1) * 20) * state.scale;
+                const warp = Math.sin(i * 0.1 + state.time * 3) * (state.chaos / 5);
+                
+                const x = centerX + Math.cos(angle + warp) * radius;
+                const y = centerY + Math.sin(angle + warp) * radius;
+                
+                const hue = (i * 3.6 + state.time * state.colorShift * 2) % 360;
+                const size = (10 - i * 0.08) * state.scale;
+                
+                if (size > 0) {
+                    ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function drawOpticalFlow() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const size = 20 * state.scale;
+            const rows = Math.ceil(canvas.height / size);
+            const cols = Math.ceil(canvas.width / size);
+
+            for(let row = 0; row < rows; row++) {
+                for(let col = 0; col < cols; col++) {
+                    const x = col * size;
+                    const y = row * size;
+                    const distX = x - centerX;
+                    const distY = y - centerY;
+                    const dist = Math.sqrt(distX * distX + distY * distY);
+                    const angle = Math.atan2(distY, distX) + state.time * state.speed;
+                    const waveOffset = Math.sin(dist * 0.01 + state.time * state.speed) * state.chaos;
+                    
+                    ctx.save();
+                    ctx.translate(x + size/2, y + size/2);
+                    ctx.rotate(angle + waveOffset);
+                    
+                    const hue = (dist * 0.1 + state.time * state.colorShift) % 360;
+                    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                    ctx.fillRect(-size/4, -size/4, size/2, size/2);
+                    ctx.restore();
+                }
+            }
+        }
+
+        function drawTextWave() {
+            const text = "∞";
+            const size = 20 * state.scale;
+            const rows = Math.ceil(canvas.height / size);
+            const cols = Math.ceil(canvas.width / size);
+            
+            ctx.font = `${size}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            for(let row = 0; row < rows; row++) {
+                for(let col = 0; col < cols; col++) {
+                    const x = col * size;
+                    const y = row * size;
+                    const wave1 = Math.sin(col * 0.2 + state.time * state.speed) * 20 * state.chaos * 0.1;
+                    const wave2 = Math.cos(row * 0.2 + state.time * state.speed * 0.7) * 20 * state.chaos * 0.1;
+                    const wave = wave1 + wave2;
+                    
+                    const hue = (x + y + state.time * state.colorShift * 10) % 360;
+                    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                    
+                    ctx.save();
+                    ctx.translate(x + size/2, y + size/2);
+                    ctx.scale(1 + wave * 0.1, 1 + wave * 0.1);
+                    ctx.fillText(text, 0, 0);
+                    ctx.restore();
+                }
+            }
+        }
+
+        function drawMorphGrid() {
+            const size = 40 * state.scale;
+            const rows = Math.ceil(canvas.height / size);
+            const cols = Math.ceil(canvas.width / size);
+            
+            for(let row = 0; row < rows; row++) {
+                for(let col = 0; col < cols; col++) {
+                    const x = col * size;
+                    const y = row * size;
+                    const time = state.time * state.speed;
+                    
+                    const morphX = Math.sin(row * 0.5 + time) * state.chaos;
+                    const morphY = Math.cos(col * 0.5 + time * 0.7) * state.chaos;
+                    
+                    const hue = (x + y + time * state.colorShift * 10) % 360;
+                    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x + morphX, y + morphY);
+                    ctx.lineTo(x + size + morphY, y + morphX);
+                    ctx.lineTo(x + size - morphX, y + size - morphY);
+                    ctx.lineTo(x - morphY, y + size - morphX);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawInfinityMirror() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxRadius = Math.max(canvas.width, canvas.height);
+            
+            for(let r = maxRadius; r > 0; r -= 20 * state.scale) {
+                const ratio = r / maxRadius;
+                const twist = state.time * state.speed * (1 - ratio) * state.chaos * 0.1;
+                const vertices = 8;
+                
+                ctx.beginPath();
+                for(let i = 0; i <= vertices; i++) {
+                    const angle = (i / vertices) * Math.PI * 2 + twist;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    
+                    if(i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                
+                const hue = (r + state.time * state.colorShift * 20) % 360;
+                ctx.strokeStyle = `hsla(${hue}, 100%, 50%, ${ratio})`;
+                ctx.lineWidth = 2 * state.scale;
+                ctx.stroke();
+            }
+        }
+
+        // Utility functions
+        function hslToRgb(h, s, l) {
+            h /= 360; s /= 100; l /= 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h * 6) % 2 - 1));
+            const m = l - c/2;
+            let r, g, b;
+            
+            if (0 <= h && h < 1/6) { r = c; g = x; b = 0; }
+            else if (1/6 <= h && h < 2/6) { r = x; g = c; b = 0; }
+            else if (2/6 <= h && h < 3/6) { r = 0; g = c; b = x; }
+            else if (3/6 <= h && h < 4/6) { r = 0; g = x; b = c; }
+            else if (4/6 <= h && h < 5/6) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            
+            return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+        }
+        
+        // Animation loop
+        let lastTime = 0;
+        let fps = 0;
+        
+        function animate(currentTime) {
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            fps = Math.round(1000 / deltaTime);
+            document.getElementById('fps').textContent = `FPS: ${fps}`;
+            
+            // Clear with trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            state.time = currentTime * 0.001;
+            
+            // Draw background visual
+            switch(state.mode) {
+                case 'kaleidoscope': drawKaleidoscope(); break;
+                case 'fractal': drawFractal(); break;
+                case 'plasma': drawPlasma(); break;
+                case 'tunnel': drawTunnel(); break;
+                case 'mandala': drawMandala(); break;
+                case 'wormhole': drawWormhole(); break;
+                case 'textWave': drawTextWave(); break;
+                case 'morphGrid': drawMorphGrid(); break;
+                case 'infinityMirror': drawInfinityMirror(); break;
+                case 'opticalFlow': drawOpticalFlow(); break;
+            }
+            
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                if (!particles[i].update()) {
+                    particles.splice(i, 1);
+                } else {
+                    particles[i].draw();
+                }
+            }
+            
+            // Add new particles
+            state.particles.forEach(type => {
+                if (particles.length < maxParticles && Math.random() < 0.3) {
+                    particles.push(new Particle(type));
+                }
+            });
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // Control functions
+        function setMode(mode) {
+            state.mode = mode;
+            document.querySelectorAll('.control-group button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(mode + '-btn').classList.add('active');
+        }
+        
+        function toggleParticles(type) {
+            const btn = document.getElementById(type + '-btn');
+            if (state.particles.has(type)) {
+                state.particles.delete(type);
+                btn.classList.remove('active');
+            } else {
+                state.particles.add(type);
+                btn.classList.add('active');
+            }
+        }
+        
+        function loadPreset(preset) {
+            // Clear current particles
+            state.particles.clear();
+            particles.length = 0;
+            
+            switch(preset) {
+                case 'acid':
+                    setMode('plasma');
+                    state.particles.add('trails');
+                    state.particles.add('orbs');
+                    document.getElementById('speed').value = 2.5;
+                    document.getElementById('chaos').value = 80;
+                    document.getElementById('colorShift').value = 90;
+                    break;
+                case 'mushroom':
+                    setMode('fractal');
+                    state.particles.add('spirals');
+                    state.particles.add('explosions');
+                    document.getElementById('speed').value = 1.5;
+                    document.getElementById('chaos').value = 60;
+                    document.getElementById('colorShift').value = 70;
+                    break;
+                case 'dmt':
+                    setMode('tunnel');
+                    state.particles.add('stars');
+                    state.particles.add('orbs');
+                    state.particles.add('trails');
+                    document.getElementById('speed').value = 4;
+                    document.getElementById('chaos').value = 95;
+                    document.getElementById('colorShift').value = 100;
+                    break;
+                case 'heaven':
+                    setMode('mandala');
+                    state.particles.add('orbs');
+                    state.particles.add('stars');
+                    document.getElementById('speed').value = 0.8;
+                    document.getElementById('chaos').value = 20;
+                    document.getElementById('colorShift').value = 40;
+                    break;
+                case 'chaos':
+                    setMode('wormhole');
+                    state.particles.add('explosions');
+                    state.particles.add('trails');
+                    state.particles.add('spirals');
+                    document.getElementById('speed').value = 5;
+                    document.getElementById('chaos').value = 100;
+                    document.getElementById('colorShift').value = 100;
+                    break;
+            }
+            
+            updateValues();
+            updateButtons();
+        }
+        
+        function toggleAudio() {
+            if (state.audioEnabled) {
+                state.audioEnabled = false;
+                document.getElementById('audio-btn').textContent = 'Enable Mic';
+                document.getElementById('audio-btn').classList.remove('active');
+            } else {
+                setupAudio();
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function updateValues() {
+            state.speed = parseFloat(document.getElementById('speed').value);
+            state.chaos = parseInt(document.getElementById('chaos').value);
+            state.colorShift = parseInt(document.getElementById('colorShift').value);
+            state.scale = parseFloat(document.getElementById('scale').value);
+            
+            document.getElementById('speed-val').textContent = state.speed;
+            document.getElementById('chaos-val').textContent = state.chaos;
+            document.getElementById('colorShift-val').textContent = state.colorShift;
+            document.getElementById('scale-val').textContent = state.scale;
+        }
+        
+        function updateButtons() {
+            document.querySelectorAll('.control-group button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(state.mode + '-btn').classList.add('active');
+            
+            state.particles.forEach(type => {
+                document.getElementById(type + '-btn').classList.add('active');
+            });
+        }
+        
+        // Event listeners
+        document.getElementById('speed').addEventListener('input', updateValues);
+        document.getElementById('chaos').addEventListener('input', updateValues);
+        document.getElementById('colorShift').addEventListener('input', updateValues);
+        document.getElementById('scale').addEventListener('input', updateValues);
+        document.getElementById('audioSens').addEventListener('input', () => {
+            document.getElementById('audioSens-val').textContent = document.getElementById('audioSens').value;
+        });
+        
+        // Initialize
+        setMode('kaleidoscope');
+        updateValues();
+        animate(0);
+        
+        // Hide controls with 'H' key
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h') {
+                const controls = document.querySelector('.controls');
+                const fps = document.getElementById('fps');
+                controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+                fps.style.display = fps.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 NeuroWave - AI Brainwave Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode {
+            background: linear-gradient(135deg, #f0f2f5 0%, #e1e8ed 50%, #d6e7f0 100%);
+            color: #333;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode .header {
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }        .frequency-controls {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .frequency-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            min-width: 500px;
+        }
+
+        .chain-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 5px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chain-add {
+            padding: 5px 10px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .chain-remove {
+            padding: 5px 10px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .frequency-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .light-mode .frequency-btn {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+
+        .frequency-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .frequency-btn.active {
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+            border: 1px solid transparent;
+        }
+
+        .custom-input {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            width: 100px;
+            text-align: center;
+        }
+
+        .light-mode .custom-input {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+
+        .play-btn {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .visualizer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .controls-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode .controls-panel {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .visual-style-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .style-btn {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .light-mode .style-btn {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+
+        .style-btn.active {
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+            border: 1px solid transparent;
+        }
+
+        .color-themes {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .theme-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-btn.active {
+            transform: scale(1.2);
+            border-color: white;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 11px;
+        }
+
+        .light-mode .toggle-btn {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .controls-panel {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+            }
+            
+            .frequency-controls {
+                justify-content: center;
+            }
+        }
+
+        .info-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .info-overlay h2 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00d4ff, #ff00aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .fade-out {
+            animation: fadeOut 2s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">🧠 NeuroWave</div>                <div class="frequency-controls">
+                    <div class="frequency-chain">
+                        <div class="chain-item">
+                            <button class="frequency-btn" data-freq="432" data-name="Earth">Earth 432Hz</button>
+                            <button class="frequency-btn" data-freq="528" data-name="DNA">DNA 528Hz</button>
+                            <button class="frequency-btn" data-freq="639" data-name="Heart">Heart 639Hz</button>
+                            <input type="number" class="custom-input" placeholder="Custom Hz" min="20" max="20000" step="0.1">
+                            <button class="chain-add">+</button>
+                        </div>
+                    </div>
+                    <button class="play-btn" id="playBtn">▶ Play</button>
+                </div>
+            </div>
+        </div>
+
+        <canvas class="visualizer" id="canvas"></canvas>
+
+        <div class="info-overlay" id="infoOverlay">
+            <h2>NeuroWave</h2>
+            <p>Select a frequency to begin your journey</p>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <label class="control-label">Visual Style</label>
+                <div class="visual-style-grid">
+                    <button class="style-btn active" data-style="fractals">Fractals</button>
+                    <button class="style-btn" data-style="plasma">Plasma</button>
+                    <button class="style-btn" data-style="particles">Particles</button>
+                    <button class="style-btn" data-style="waves">Waves</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Color Theme</label>
+                <div class="color-themes">
+                    <div class="theme-btn active" data-theme="cosmic" style="background: linear-gradient(45deg, #00d4ff, #ff00aa);"></div>
+                    <div class="theme-btn" data-theme="ocean" style="background: linear-gradient(45deg, #0077be, #00ff88);"></div>
+                    <div class="theme-btn" data-theme="sunset" style="background: linear-gradient(45deg, #ff6b6b, #ffa500);"></div>
+                    <div class="theme-btn" data-theme="forest" style="background: linear-gradient(45deg, #2d5016, #90ee90);"></div>
+                    <div class="theme-btn" data-theme="purple" style="background: linear-gradient(45deg, #8a2be2, #dda0dd);"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Intensity</label>
+                <input type="range" class="slider" id="intensitySlider" min="0.1" max="3" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Speed</label>
+                <input type="range" class="slider" id="speedSlider" min="0.1" max="5" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <button class="toggle-btn" id="themeToggle">🌙 Dark Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class NeuroWave {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');                this.isPlaying = false;
+                this.frequencies = [432]; // Default frequency
+                this.oscillators = [];
+                this.currentStyle = 'fractals';
+                this.currentTheme = 'cosmic';
+                this.intensity = 1;
+                this.speed = 1;
+                this.time = 0;
+                this.masterGain = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.animationId = null;
+                
+                this.themes = {
+                    cosmic: ['#00d4ff', '#ff00aa', '#9d00ff'],
+                    ocean: ['#0077be', '#00ff88', '#4169e1'],
+                    sunset: ['#ff6b6b', '#ffa500', '#ff1493'],
+                    forest: ['#2d5016', '#90ee90', '#228b22'],
+                    purple: ['#8a2be2', '#dda0dd', '#6a0dad']
+                };
+                
+                this.init();
+                this.setupEventListeners();
+                this.resizeCanvas();
+                this.loadSettings();
+            }
+
+            init() {
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }            setupEventListeners() {
+                // Initialize chain functionality
+                const chain = document.querySelector('.frequency-chain');
+                document.querySelector('.chain-add').addEventListener('click', () => {
+                    const newItem = chain.querySelector('.chain-item').cloneNode(true);
+                    newItem.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    newItem.querySelector('.chain-add').remove();
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'chain-remove';
+                    removeBtn.textContent = '×';
+                    removeBtn.addEventListener('click', () => {
+                        newItem.remove();
+                        this.updateFrequencies();
+                    });
+                    
+                    newItem.appendChild(removeBtn);
+                    this.setupChainItemListeners(newItem);
+                    chain.appendChild(newItem);
+                });
+
+                // Setup initial chain item listeners
+                this.setupChainItemListeners(chain.querySelector('.chain-item'));
+
+                this.updateFrequencies(); // Initial frequency setup
+
+                // Play button
+                document.getElementById('playBtn').addEventListener('click', () => {
+                    this.togglePlay();
+                });
+
+                // Visual style buttons
+                document.querySelectorAll('.style-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentStyle = btn.dataset.style;
+                        this.saveSettings();
+                    });
+                });
+
+                // Color theme buttons
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentTheme = btn.dataset.theme;
+                        this.saveSettings();
+                    });
+                });
+
+                // Sliders
+                document.getElementById('intensitySlider').addEventListener('input', (e) => {
+                    this.intensity = parseFloat(e.target.value);
+                    this.saveSettings();
+                });
+
+                document.getElementById('speedSlider').addEventListener('input', (e) => {
+                    this.speed = parseFloat(e.target.value);
+                    this.saveSettings();
+                });
+
+                // Theme toggle
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    document.body.classList.toggle('light-mode');
+                    const btn = document.getElementById('themeToggle');
+                    btn.textContent = document.body.classList.contains('light-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+                    this.saveSettings();
+                });
+            }
+
+            async togglePlay() {
+                if (this.isPlaying) {
+                    this.stop();
+                } else {
+                    await this.play();
+                }
+            }
+
+            async play() {
+                await Tone.start();
+                
+                // Create master gain node
+                this.masterGain = new Tone.Gain(0.5).toDestination();
+                this.analyser = Tone.getContext().createAnalyser();
+                this.analyser.fftSize = 2048;
+                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                
+                // Connect master gain to analyser
+                this.masterGain.connect(this.analyser);
+                
+                // Create oscillators
+                this.updateOscillators();
+                
+                this.isPlaying = true;
+                document.getElementById('playBtn').textContent = '⏸ Pause';
+                document.getElementById('infoOverlay').classList.add('fade-out');
+                
+                this.animate();
+            }
+
+            setupChainItemListeners(chainItem) {
+                chainItem.querySelectorAll('.frequency-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        chainItem.querySelectorAll('.frequency-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        chainItem.querySelector('.custom-input').value = '';
+                        this.updateFrequencies();
+                    });
+                });
+
+                chainItem.querySelector('.custom-input').addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    if (value && value >= 20 && value <= 20000) {
+                        chainItem.querySelectorAll('.frequency-btn').forEach(b => b.classList.remove('active'));
+                        this.updateFrequencies();
+                    }
+                });
+            }
+
+            updateFrequencies() {
+                this.frequencies = Array.from(document.querySelectorAll('.chain-item')).map(item => {
+                    const activeBtn = item.querySelector('.frequency-btn.active');
+                    const customInput = item.querySelector('.custom-input');
+                    if (activeBtn) {
+                        return parseFloat(activeBtn.dataset.freq);
+                    } else if (customInput.value) {
+                        return parseFloat(customInput.value);
+                    }
+                    return null;
+                }).filter(freq => freq !== null);
+
+                // Update oscillators if playing
+                if (this.isPlaying) {
+                    this.updateOscillators();
+                }
+            }
+
+            updateOscillators() {
+                // Stop and dispose existing oscillators
+                this.oscillators.forEach(osc => {
+                    osc.stop();
+                    osc.dispose();
+                });
+                this.oscillators = [];
+
+                // Create new oscillators for each frequency
+                this.frequencies.forEach(freq => {
+                    const osc = new Tone.Oscillator(freq, "sine");
+                    osc.volume.value = -30 - (10 * (this.frequencies.length - 1)); // Reduce volume when multiple frequencies
+                    osc.connect(this.masterGain);
+                    osc.start();
+                    this.oscillators.push(osc);
+                });
+            }
+
+            stop() {
+                if (this.oscillators.length) {
+                    this.oscillators.forEach(osc => {
+                        osc.stop();
+                        osc.dispose();
+                    });
+                    this.oscillators = [];
+                }
+                
+                if (this.masterGain) {
+                    this.masterGain.dispose();
+                    this.masterGain = null;
+                }
+                
+                if (this.analyser) {
+                    this.analyser.disconnect();
+                    this.analyser = null;
+                }
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+                
+                this.isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶ Play';
+                
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            animate() {
+                if (!this.isPlaying) return;
+                
+                this.time += 0.016 * this.speed; // ~60fps
+                
+                // Update oscillator frequency with precise timing
+                if (this.oscillator && this.oscillator.frequency.value !== this.currentFreq) {
+                    this.oscillator.frequency.setValueAtTime(this.currentFreq, Tone.now());
+                }
+                
+                // Get audio data
+                if (this.analyser && this.dataArray) {
+                    this.analyser.getByteTimeDomainData(this.dataArray);
+                    // Calculate audio intensity from waveform
+                    let sum = 0;
+                    for (let i = 0; i < this.dataArray.length; i++) {
+                        sum += Math.abs(this.dataArray[i] - 128);
+                    }
+                    const audioIntensity = (sum / this.dataArray.length) / 128;
+                    this.intensity = Math.max(0.1, audioIntensity * 2);
+                }
+                
+                this.render();
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+
+            render() {
+                const { width, height } = this.canvas;
+                const colors = this.themes[this.currentTheme];
+                
+                // Clear with fade effect
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                this.ctx.fillRect(0, 0, width, height);
+                
+                switch (this.currentStyle) {
+                    case 'fractals':
+                        this.renderFractals(colors);
+                        break;
+                    case 'plasma':
+                        this.renderPlasma(colors);
+                        break;
+                    case 'particles':
+                        this.renderParticles(colors);
+                        break;
+                    case 'waves':
+                        this.renderWaves(colors);
+                        break;
+                }
+            }
+
+            renderFractals(colors) {
+                const { width, height } = this.canvas;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 + this.time * 0.5;
+                    const radius = 50 + Math.sin(this.time * this.currentFreq * 0.1) * 30 * this.intensity;
+                    
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, 100);
+                    gradient.addColorStop(0, colors[i % colors.length] + 'aa');
+                    gradient.addColorStop(1, colors[i % colors.length] + '00');
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 50 * this.intensity, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Recursive smaller fractals
+                    for (let j = 0; j < 3; j++) {
+                        const subAngle = angle + (j / 3) * Math.PI * 2;
+                        const subRadius = 30;
+                        const subX = x + Math.cos(subAngle) * subRadius;
+                        const subY = y + Math.sin(subAngle) * subRadius;
+                        
+                        this.ctx.fillStyle = colors[(i + j) % colors.length] + '44';
+                        this.ctx.beginPath();
+                        this.ctx.arc(subX, subY, 15 * this.intensity, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                }
+            }
+
+            renderPlasma(colors) {
+                const { width, height } = this.canvas;
+                const imageData = this.ctx.createImageData(width, height);
+                const data = imageData.data;
+                
+                for (let x = 0; x < width; x += 4) {
+                    for (let y = 0; y < height; y += 4) {
+                        const i = (y * width + x) * 4;
+                        
+                        const plasma = Math.sin(x * 0.01 + this.time) * 
+                                     Math.sin(y * 0.01 + this.time * 0.7) * 
+                                     Math.sin((x + y) * 0.005 + this.time * 0.5) * this.intensity;
+                        
+                        const colorIndex = Math.floor((plasma + 1) * 0.5 * colors.length);
+                        const color = colors[Math.max(0, Math.min(colorIndex, colors.length - 1))];
+                        
+                        const rgb = this.hexToRgb(color);
+                        data[i] = rgb.r;
+                        data[i + 1] = rgb.g;
+                        data[i + 2] = rgb.b;
+                        data[i + 3] = 255 * Math.abs(plasma) * 0.5;
+                    }
+                }
+                
+                this.ctx.putImageData(imageData, 0, 0);
+            }
+
+            renderParticles(colors) {
+                const { width, height } = this.canvas;
+                const particleCount = 100;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (i / particleCount) * Math.PI * 2 + this.time * 0.5;
+                    const radius = 100 + Math.sin(this.time * this.currentFreq * 0.1 + i) * 150 * this.intensity;
+                    
+                    const x = width / 2 + Math.cos(angle) * radius;
+                    const y = height / 2 + Math.sin(angle) * radius;
+                    
+                    const size = 2 + Math.sin(this.time * 2 + i) * 3 * this.intensity;
+                    
+                    this.ctx.fillStyle = colors[i % colors.length] + '88';
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Connect particles with lines
+                    if (i > 0) {
+                        const prevAngle = ((i - 1) / particleCount) * Math.PI * 2 + this.time * 0.5;
+                        const prevRadius = 100 + Math.sin(this.time * this.currentFreq * 0.1 + (i - 1)) * 150 * this.intensity;
+                        const prevX = width / 2 + Math.cos(prevAngle) * prevRadius;
+                        const prevY = height / 2 + Math.sin(prevAngle) * prevRadius;
+                        
+                        this.ctx.strokeStyle = colors[i % colors.length] + '22';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(prevX, prevY);
+                        this.ctx.lineTo(x, y);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+
+            renderWaves(colors) {
+                const { width, height } = this.canvas;
+                
+                for (let wave = 0; wave < 5; wave++) {
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = colors[wave % colors.length] + '66';
+                    this.ctx.lineWidth = 2 + wave;
+                    
+                    for (let x = 0; x < width; x += 5) {
+                        const y = height / 2 + 
+                                 Math.sin((x * 0.01) + (this.time * this.speed) + (wave * 0.5)) * 50 * this.intensity +
+                                 Math.sin((x * 0.005) + (this.time * this.speed * 1.3) + (wave * 0.8)) * 30 * this.intensity;
+                        
+                        if (x === 0) {
+                            this.ctx.moveTo(x, y);
+                        } else {
+                            this.ctx.lineTo(x, y);
+                        }
+                    }
+                    
+                    this.ctx.stroke();
+                }
+            }
+
+            hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : { r: 0, g: 0, b: 0 };
+            }
+
+            saveSettings() {
+                const settings = {
+                    style: this.currentStyle,
+                    theme: this.currentTheme,
+                    intensity: this.intensity,
+                    speed: this.speed,
+                    lightMode: document.body.classList.contains('light-mode')
+                };
+                
+                try {
+                    // Store in memory instead of localStorage for Claude.ai compatibility
+                    this.savedSettings = settings;
+                } catch (e) {
+                    console.log('Settings saved to memory');
+                }
+            }
+
+            loadSettings() {
+                try {
+                    const settings = this.savedSettings || {
+                        style: 'fractals',
+                        theme: 'cosmic',
+                        intensity: 1,
+                        speed: 1,
+                        lightMode: false
+                    };
+                    
+                    this.currentStyle = settings.style;
+                    this.currentTheme = settings.theme;
+                    this.intensity = settings.intensity;
+                    this.speed = settings.speed;
+                    
+                    // Update UI
+                    document.querySelector(`[data-style="${settings.style}"]`)?.classList.add('active');
+                    document.querySelector(`[data-theme="${settings.theme}"]`)?.classList.add('active');
+                    document.getElementById('intensitySlider').value = settings.intensity;
+                    document.getElementById('speedSlider').value = settings.speed;
+                    
+                    if (settings.lightMode) {
+                        document.body.classList.add('light-mode');
+                        document.getElementById('themeToggle').textContent = '☀️ Light Mode';
+                    }
+                } catch (e) {
+                    console.log('Using default settings');
+                }
+            }
+        }
+
+        // Initialize the app
+        const app = new NeuroWave();
+    </script>
+</body>
+</html>
